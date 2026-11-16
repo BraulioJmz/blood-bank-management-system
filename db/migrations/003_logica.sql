@@ -218,3 +218,64 @@ CREATE TRIGGER tg_prueba_evaluar
 AFTER UPDATE OF resultado ON prueba_tamizaje
 FOR EACH ROW WHEN (NEW.resultado <> 'pendiente')
 EXECUTE FUNCTION tg_prueba_evaluar();
+
+-- ------------------------------------------------------------ Fraccionamiento --
+-- Crea una unidad por componente con fecha_caducidad = fecha_obtencion + vida_util_dias,
+-- en 'cuarentena' (DEFAULT de la tabla), y registra su movimiento de 'entrada'.
+-- Si el tamizaje ya estaba completo, fn_evaluar_tamizaje las libera o descarta.
+CREATE FUNCTION fn_fraccionar_donacion(p_id_donacion integer, p_componentes integer[])
+RETURNS SETOF unidad_sangre
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = banco, pg_temp AS $$
+DECLARE
+    v_donacion donacion%ROWTYPE;
+    v_tipo     integer;
+    v_invalido integer;
+    v_repetido text;
+    r          unidad_sangre%ROWTYPE;
+BEGIN
+    -- FOR UPDATE: serializa fraccionamientos simultáneos de la misma donación.
+    SELECT * INTO v_donacion FROM donacion WHERE id_donacion = p_id_donacion FOR UPDATE;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'La donación % no existe', p_id_donacion USING ERRCODE = 'BS007';
+    END IF;
+    IF p_componentes IS NULL OR cardinality(p_componentes) = 0 THEN
+        RAISE EXCEPTION 'Indica al menos un componente' USING ERRCODE = 'BS009';
+    END IF;
+    IF cardinality(p_componentes) <> (SELECT count(DISTINCT c) FROM unnest(p_componentes) c) THEN
+        RAISE EXCEPTION 'La lista de componentes tiene repetidos' USING ERRCODE = 'BS009';
+    END IF;
+    SELECT c INTO v_invalido FROM unnest(p_componentes) c
+     WHERE NOT EXISTS (SELECT 1 FROM componente WHERE id_componente = c) LIMIT 1;
+    IF FOUND THEN
+        RAISE EXCEPTION 'El componente % no existe', v_invalido USING ERRCODE = 'BS009';
+    END IF;
+    SELECT string_agg(co.nombre, ', ') INTO v_repetido
+      FROM unidad_sangre u JOIN componente co USING (id_componente)
+     WHERE u.id_donacion = p_id_donacion AND u.id_componente = ANY (p_componentes);
+    IF v_repetido IS NOT NULL THEN
+        RAISE EXCEPTION 'La donación % ya tiene unidades de: %', p_id_donacion, v_repetido USING ERRCODE = 'BS009';
+    END IF;
+    IF EXISTS (SELECT 1 FROM prueba_tamizaje WHERE id_donacion = p_id_donacion AND resultado = 'reactivo') THEN
+        RAISE EXCEPTION 'La donación % tiene tamizaje reactivo; no se fracciona', p_id_donacion
+            USING ERRCODE = 'BS009';
+    END IF;
+
+    SELECT id_tipo_sanguineo INTO v_tipo FROM donante WHERE id_donante = v_donacion.id_donante;
+
+    FOR r IN
+        INSERT INTO unidad_sangre (id_donacion, id_componente, id_tipo_sanguineo, fecha_obtencion, fecha_caducidad)
+        SELECT p_id_donacion, co.id_componente, v_tipo,
+               v_donacion.fecha_donacion::date,
+               v_donacion.fecha_donacion::date + co.vida_util_dias   -- date + integer = date
+          FROM componente co
+         WHERE co.id_componente = ANY (p_componentes)
+        RETURNING *
+    LOOP
+        PERFORM fn_registrar_movimiento(r.id_unidad, 'entrada', 'Fraccionamiento de la donación ' || p_id_donacion);
+    END LOOP;
+
+    PERFORM fn_evaluar_tamizaje(p_id_donacion);
+
+    RETURN QUERY SELECT * FROM unidad_sangre WHERE id_donacion = p_id_donacion ORDER BY id_unidad;
+END $$;
+REVOKE EXECUTE ON FUNCTION fn_fraccionar_donacion(integer, integer[]) FROM PUBLIC;
