@@ -19,7 +19,8 @@
     "dev": "concurrently -n api,web -c blue,magenta \"npm run dev -w @banco/api\" \"npm run dev -w @banco/web\"",
     "build": "npm run build -w @banco/api && npm run build -w @banco/web",
     "test": "npm test -w @banco/api",
-    "lint": "npm run lint --workspaces --if-present"
+    "lint": "npm run lint --workspaces --if-present",
+    "test:evidencia": "bash scripts/evidencia-pruebas.sh"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
