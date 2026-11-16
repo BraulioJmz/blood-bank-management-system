@@ -1,0 +1,27 @@
+# PostgreSQL 16 para desarrollo. El superusuario `postgres` solo se usa para el
+# bootstrap (crear roles y bases); las migraciones corren como `banco_owner`
+# y la API como `app_login` (ver db/bootstrap.sql).
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: banco-sangre-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?define POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: postgres
+      # Fuerza SCRAM-SHA-256 también para conexiones TCP (pg_hba "host").
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+      TZ: America/Mexico_City
+      PGTZ: America/Mexico_City
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:
