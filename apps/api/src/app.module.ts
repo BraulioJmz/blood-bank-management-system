@@ -7,6 +7,7 @@ import { InventarioModule } from './inventario/inventario.module';
 import { LaboratorioModule } from './laboratorio/laboratorio.module';
 import { SaludController } from './salud.controller';
 import { SolicitudesModule } from './solicitudes/solicitudes.module';
+import { TrazabilidadModule } from './trazabilidad/trazabilidad.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { SolicitudesModule } from './solicitudes/solicitudes.module';
     InventarioModule,
     HospitalesModule,
     SolicitudesModule,
+    TrazabilidadModule,
   ],
   controllers: [SaludController],
 })
