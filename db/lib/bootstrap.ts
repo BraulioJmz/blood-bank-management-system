@@ -9,6 +9,9 @@
 import { Client } from 'pg';
 import { env, identificadorSeguro } from './config';
 
+/** Lista blanca de roles de grupo (la misma que valida DbService.withContext). */
+export const ROLES_APP = ['rol_recepcion', 'rol_laboratorio', 'rol_inventario', 'rol_hospital', 'rol_admin'] as const;
+
 async function asegurarRol(client: Client, nombre: string, atributos: string, password?: string) {
   const id = identificadorSeguro(nombre);
   const { rowCount } = await client.query('SELECT 1 FROM pg_roles WHERE rolname = $1', [nombre]);
@@ -29,6 +32,27 @@ export async function bootstrapRoles(client: Client) {
     'LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS',
     env.ownerPassword(),
   );
+
+  // Roles de grupo NOLOGIN: agrupan privilegios; nadie inicia sesión con ellos.
+  for (const rol of ROLES_APP) {
+    await asegurarRol(client, rol, 'NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS');
+  }
+
+  // app_login: la única cuenta con la que se conecta la API. NOINHERIT + membresía
+  // con INHERIT FALSE (sintaxis PG16): NO hereda los privilegios de los roles de
+  // grupo; con SET TRUE solo puede "ponérselos" con SET ROLE. Así, si una petición
+  // olvidara el SET LOCAL ROLE, la conexión no podría leer ni escribir nada.
+  await asegurarRol(
+    client,
+    env.appUser,
+    'LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS CONNECTION LIMIT 50',
+    env.appPassword(),
+  );
+  for (const rol of ROLES_APP) {
+    await client.query(
+      `GRANT ${identificadorSeguro(rol)} TO ${identificadorSeguro(env.appUser)} WITH INHERIT FALSE, SET TRUE`,
+    );
+  }
 }
 
 export async function recrearBase(client: Client, database: string) {
