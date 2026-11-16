@@ -2,6 +2,7 @@
  * db:sintetico — genera datos de volumen sobre la BD ya migrada y sembrada.
  *   npm run db:sintetico -- --unidades 100000 [--dias 400] [--db banco]
  */
+import { fakerES_MX as faker } from '@faker-js/faker';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { clienteOwner, env } from '../lib/config';
@@ -11,9 +12,13 @@ function arg(nombre: string, porDefecto: string): string {
   return i > 0 && process.argv[i + 1] ? process.argv[i + 1] : porDefecto;
 }
 
-/** Nombres de donantes. */
+/** Nombres realistas (faker es_MX) con semilla fija: corridas reproducibles. */
 function generarNombres(n: number): string[] {
-  return Array.from({ length: n }, (_, i) => `Donante sintético ${i + 1}`);
+  faker.seed(2026);
+  return Array.from(
+    { length: n },
+    () => `${faker.person.firstName()} ${faker.person.lastName()} ${faker.person.lastName()}`,
+  );
 }
 
 export async function generar(database: string, unidades: number, dias: number) {
