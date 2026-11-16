@@ -279,3 +279,97 @@ BEGIN
     RETURN QUERY SELECT * FROM unidad_sangre WHERE id_donacion = p_id_donacion ORDER BY id_unidad;
 END $$;
 REVOKE EXECUTE ON FUNCTION fn_fraccionar_donacion(integer, integer[]) FROM PUBLIC;
+
+-- ------------------------------------------------ Estado de solicitud (interno) --
+CREATE FUNCTION fn_recalcular_solicitud(p_id_solicitud integer) RETURNS text
+LANGUAGE sql SECURITY DEFINER SET search_path = banco, pg_temp AS $$
+    UPDATE solicitud s
+       SET estado = CASE
+                      WHEN a.n >= s.cantidad THEN 'surtida'
+                      WHEN a.n > 0           THEN 'parcial'
+                      ELSE 'pendiente'
+                    END
+      FROM (SELECT count(*) AS n FROM asignacion WHERE id_solicitud = p_id_solicitud) a
+     WHERE s.id_solicitud = p_id_solicitud AND s.estado <> 'cancelada'
+    RETURNING s.estado
+$$;
+REVOKE EXECUTE ON FUNCTION fn_recalcular_solicitud(integer) FROM PUBLIC;
+
+-- ---------------------------------------- Asignación con control de concurrencia --
+-- PROCEDURE (se invoca con CALL) en lugar de FUNCTION: es una operación, no un cálculo;
+-- devuelve el id creado por el parámetro INOUT. No hace COMMIT propio: corre dentro de
+-- la transacción de withContext, así que cualquier RAISE revierte TODO (asignación,
+-- cambio de estado y movimiento) — atomicidad.
+--
+-- Bloqueos, siempre en el mismo orden (solicitud → unidad) para evitar deadlocks:
+--   1. solicitud FOR UPDATE: serializa asignaciones a la misma solicitud, así dos
+--      operadores no pueden rebasar `cantidad` ni pisarse el recálculo de estado.
+--   2. unidad FOR UPDATE: si dos transacciones quieren la MISMA unidad, la segunda se
+--      bloquea en esta línea hasta que la primera termina. Al despertar, READ COMMITTED
+--      vuelve a leer la fila ya actualizada (estado = 'asignada') y la validación la
+--      rechaza con BS001. Sin FOR UPDATE, ambas leerían 'disponible' y ambas asignarían.
+--   3. UK uk_asignacion_unidad: segunda barrera; si algo esquivara el bloqueo, el
+--      INSERT duplicado fallaría con 23505.
+CREATE PROCEDURE sp_asignar_unidad(p_id_solicitud integer, p_id_unidad integer,
+                                   INOUT p_id_asignacion integer DEFAULT NULL)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = banco, pg_temp AS $$
+DECLARE
+    v_usuario   integer := fn_usuario_actual();
+    s           solicitud%ROWTYPE;
+    u           unidad_sangre%ROWTYPE;
+    v_asignadas integer;
+BEGIN
+    SELECT * INTO s FROM solicitud WHERE id_solicitud = p_id_solicitud FOR UPDATE;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'La solicitud % no existe', p_id_solicitud USING ERRCODE = 'BS007';
+    END IF;
+    IF s.estado NOT IN ('pendiente', 'parcial') THEN
+        RAISE EXCEPTION 'La solicitud % está %; no admite más asignaciones', p_id_solicitud, s.estado
+            USING ERRCODE = 'BS005';
+    END IF;
+    SELECT count(*) INTO v_asignadas FROM asignacion WHERE id_solicitud = p_id_solicitud;
+    IF v_asignadas >= s.cantidad THEN
+        RAISE EXCEPTION 'La solicitud % ya tiene sus % unidades', p_id_solicitud, s.cantidad
+            USING ERRCODE = 'BS005';
+    END IF;
+
+    SELECT * INTO u FROM unidad_sangre WHERE id_unidad = p_id_unidad FOR UPDATE;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'La unidad % no existe', p_id_unidad USING ERRCODE = 'BS007';
+    END IF;
+    CASE u.estado
+        WHEN 'disponible' THEN NULL;
+        WHEN 'cuarentena' THEN
+            RAISE EXCEPTION 'La unidad % está en cuarentena: su tamizaje no está completo', p_id_unidad
+                USING ERRCODE = 'BS006';
+        WHEN 'descartada' THEN
+            RAISE EXCEPTION 'La unidad % fue descartada (tamizaje reactivo o baja)', p_id_unidad
+                USING ERRCODE = 'BS012';
+        WHEN 'caducada' THEN
+            RAISE EXCEPTION 'La unidad % está caducada', p_id_unidad USING ERRCODE = 'BS002';
+        ELSE
+            RAISE EXCEPTION 'La unidad % no está disponible (estado: %)', p_id_unidad, u.estado
+                USING ERRCODE = 'BS001';
+    END CASE;
+    -- Puede estar 'disponible' pero vencida si fn_marcar_caducadas aún no corrió hoy.
+    IF u.fecha_caducidad < current_date THEN
+        RAISE EXCEPTION 'La unidad % caducó el %', p_id_unidad, u.fecha_caducidad USING ERRCODE = 'BS002';
+    END IF;
+    IF u.id_tipo_sanguineo <> s.id_tipo_sanguineo THEN
+        RAISE EXCEPTION 'La unidad % es de otro tipo sanguíneo que la solicitud', p_id_unidad
+            USING ERRCODE = 'BS003';
+    END IF;
+    IF u.id_componente <> s.id_componente THEN
+        RAISE EXCEPTION 'La unidad % es de otro componente que la solicitud', p_id_unidad
+            USING ERRCODE = 'BS004';
+    END IF;
+
+    INSERT INTO asignacion (id_solicitud, id_unidad, id_usuario)
+    VALUES (p_id_solicitud, p_id_unidad, v_usuario)
+    RETURNING id_asignacion INTO p_id_asignacion;
+
+    UPDATE unidad_sangre SET estado = 'asignada' WHERE id_unidad = p_id_unidad;
+    PERFORM fn_registrar_movimiento(p_id_unidad, 'salida', 'Asignada a la solicitud ' || p_id_solicitud);
+    PERFORM fn_recalcular_solicitud(p_id_solicitud);
+END $$;
+REVOKE EXECUTE ON PROCEDURE sp_asignar_unidad(integer, integer, integer) FROM PUBLIC;
