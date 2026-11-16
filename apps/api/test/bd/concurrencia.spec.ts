@@ -2,8 +2,6 @@
  * Pregunta de investigación 1 — ¿De qué manera el bloqueo de fila evita la doble
  * asignación de una unidad cuando varios operadores asignan al mismo tiempo?
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
 import {
   asignar,
   como,
@@ -11,7 +9,7 @@ import {
   crearDonacion,
   crearPoolApp,
   crearSolicitud,
-  EVIDENCIAS,
+  guardarEvidencia,
   ERITRO,
   idComponente,
   idTipo,
@@ -38,9 +36,8 @@ describe('Concurrencia en la asignación', () => {
 
   afterAll(async () => {
     await pool.end();
-    mkdirSync(EVIDENCIAS, { recursive: true });
-    writeFileSync(
-      path.join(EVIDENCIAS, 'resultados-concurrencia.md'),
+    guardarEvidencia(
+      'resultados-concurrencia.md',
       `# Resultados de concurrencia (generado por concurrencia.spec.ts)\n\n` +
         `Fecha: ${new Date().toISOString()}\n\n${resultados.join('\n\n')}\n`,
     );

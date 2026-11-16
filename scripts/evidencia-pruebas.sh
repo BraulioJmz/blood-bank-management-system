@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 OUT=docs/evidencias/pruebas.md
 JSON=$(mktemp)
 mkdir -p docs/evidencias
-(cd apps/api && npx jest --runInBand --json --outputFile="$JSON" >/dev/null 2>&1)
+(cd apps/api && EVIDENCIA=1 npx jest --runInBand --json --outputFile="$JSON" >/dev/null 2>&1)
 CODIGO=$?
 node - "$JSON" "$OUT" "$CODIGO" <<'NODE'
 const fs = require('fs');

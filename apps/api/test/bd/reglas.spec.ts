@@ -3,8 +3,6 @@
  * rechazan las asignaciones y operaciones inválidas?
  * Cada caso verifica el SQLSTATE y que NADA cambió (atomicidad).
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
 import {
   asignar,
   como,
@@ -14,7 +12,7 @@ import {
   crearSolicitud,
   ERITRO,
   estadoUnidad,
-  EVIDENCIAS,
+  guardarEvidencia,
   idComponente,
   idTipo,
   PLASMA,
@@ -57,9 +55,8 @@ describe('Reglas de negocio en PostgreSQL', () => {
 
   afterAll(async () => {
     await pool.end();
-    mkdirSync(EVIDENCIAS, { recursive: true });
-    writeFileSync(
-      path.join(EVIDENCIAS, 'resultados-reglas.md'),
+    guardarEvidencia(
+      'resultados-reglas.md',
       `# Resultados de reglas de negocio (generado por reglas.spec.ts)\n\n` +
         `Fecha: ${new Date().toISOString()}\n\n` +
         `| Caso | Esperado | Obtenido | ¿Sin cambios? |\n|---|---|---|---|\n${filas.join('\n')}\n`,

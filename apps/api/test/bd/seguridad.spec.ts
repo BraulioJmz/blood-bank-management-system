@@ -2,8 +2,6 @@
  * Seguridad en la BD: privilegios mínimos por rol, RLS por hospital y bitácora
  * inmodificable. Evidencia para el atributo de calidad "Seguridad".
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
-import path from 'node:path';
 import { PoolClient } from 'pg';
 import { ContextoInvalidoError, RolApp } from '../../src/db/contexto';
 import {
@@ -15,7 +13,7 @@ import {
   crearPoolApp,
   crearSolicitud,
   ERITRO,
-  EVIDENCIAS,
+  guardarEvidencia,
   idComponente,
   idTipo,
   sqlstate,
@@ -39,9 +37,8 @@ describe('Seguridad en PostgreSQL', () => {
 
   afterAll(async () => {
     await pool.end();
-    mkdirSync(EVIDENCIAS, { recursive: true });
-    writeFileSync(
-      path.join(EVIDENCIAS, 'resultados-seguridad.md'),
+    guardarEvidencia(
+      'resultados-seguridad.md',
       `# Resultados de seguridad (generado por seguridad.spec.ts)\n\n` +
         `Fecha: ${new Date().toISOString()}\n\n` +
         `| Verificación | Esperado | Obtenido |\n|---|---|---|\n${filas.join('\n')}\n`,

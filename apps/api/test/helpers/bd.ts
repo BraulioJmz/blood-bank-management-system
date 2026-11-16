@@ -4,6 +4,7 @@
  * - owner/superusuario: solo para preparar escenarios (p. ej. forzar una caducidad).
  */
 import { config as cargarEnv } from 'dotenv';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { Client, Pool, PoolClient } from 'pg';
 import {
@@ -18,6 +19,13 @@ cargarEnv({
 });
 
 export const DB_TEST = process.env.DB_TEST_NAME ?? 'banco_test';
+/** Solo `npm run test:evidencia` (EVIDENCIA=1) reescribe docs/evidencias/. */
+export function guardarEvidencia(archivo: string, contenido: string) {
+  if (process.env.EVIDENCIA !== '1') return;
+  mkdirSync(EVIDENCIAS, { recursive: true });
+  writeFileSync(path.join(EVIDENCIAS, archivo), contenido);
+}
+
 export const EVIDENCIAS = path.resolve(
   __dirname,
   '..',
