@@ -151,3 +151,58 @@ CREATE POLICY pol_asignacion_hospital ON asignacion
 CREATE POLICY pol_asignacion_personal ON asignacion
     FOR SELECT TO rol_inventario, rol_admin
     USING (true);
+
+-- =============================================================================
+-- Bitácora de auditoría (trigger genérico)
+-- =============================================================================
+-- Una sola función sirve para todas las tablas: TG_TABLE_NAME y TG_OP dicen qué
+-- tabla y operación dispararon el trigger; TG_ARGV[0] es el nombre de la PK.
+-- to_jsonb(OLD/NEW) serializa la fila completa sin conocer sus columnas.
+--
+-- Identidad registrada:
+--   usuario_bd  = current_user. OJO: dentro de SECURITY DEFINER es el DUEÑO
+--                 (banco_owner), no quien llamó. Por eso no basta.
+--   rol_app     = app.rol, fijado por withContext (rol de la app que operó).
+--   usuario_app = app.id_usuario, fijado por withContext (persona que operó).
+--
+-- SECURITY DEFINER: los roles de la app NO tienen INSERT sobre la bitácora (si lo
+-- tuvieran podrían fabricar registros); solo este trigger escribe en ella.
+CREATE FUNCTION tg_bitacora() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = banco, pg_temp AS $$
+DECLARE
+    v_old jsonb;
+    v_new jsonb;
+BEGIN
+    IF TG_OP IN ('UPDATE', 'DELETE') THEN v_old := to_jsonb(OLD) - 'password_hash'; END IF;
+    IF TG_OP IN ('INSERT', 'UPDATE') THEN v_new := to_jsonb(NEW) - 'password_hash'; END IF;
+    -- Un UPDATE que no cambió nada no se registra (ruido).
+    IF TG_OP = 'UPDATE' AND v_old = v_new THEN
+        RETURN NULL;
+    END IF;
+    INSERT INTO bitacora_auditoria (tabla, operacion, id_registro, usuario_bd, usuario_app, rol_app,
+                                    valores_anteriores, valores_nuevos)
+    VALUES (TG_TABLE_NAME, TG_OP, (coalesce(v_new, v_old) ->> TG_ARGV[0])::integer,
+            current_user,
+            nullif(current_setting('app.id_usuario', true), ''),
+            nullif(current_setting('app.rol', true), ''),
+            v_old, v_new);
+    RETURN NULL;
+END $$;
+REVOKE EXECUTE ON FUNCTION tg_bitacora() FROM PUBLIC;
+
+-- Un trigger AFTER … FOR EACH ROW por tabla auditada.
+DO $$
+DECLARE
+    t record;
+BEGIN
+    FOR t IN SELECT * FROM (VALUES
+        ('hospital', 'id_hospital'), ('usuario', 'id_usuario'), ('donante', 'id_donante'),
+        ('donacion', 'id_donacion'), ('prueba_tamizaje', 'id_prueba'), ('unidad_sangre', 'id_unidad'),
+        ('movimiento_inventario', 'id_movimiento'), ('solicitud', 'id_solicitud'),
+        ('asignacion', 'id_asignacion')) AS v(tabla, pk)
+    LOOP
+        EXECUTE format(
+            'CREATE TRIGGER tg_bitacora AFTER INSERT OR UPDATE OR DELETE ON %I
+             FOR EACH ROW EXECUTE FUNCTION tg_bitacora(%L)', t.tabla, t.pk);
+    END LOOP;
+END $$;
