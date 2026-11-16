@@ -34,7 +34,7 @@ export default tseslint.config(
   },
   {
     // Las pruebas leen filas de pg (tipadas como any) y las comparan directamente.
-    files: ['test/**/*.ts'],
+    files: ['test/**/*.ts', 'src/**/*.spec.ts'],
     ignores: [],
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',
