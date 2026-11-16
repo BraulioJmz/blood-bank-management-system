@@ -1,6 +1,6 @@
 # Resultados de concurrencia (generado por concurrencia.spec.ts)
 
-Fecha: 2026-11-16T23:12:33.791Z
+Fecha: 2026-11-16T23:13:12.319Z
 
 ## Misma unidad, 20 transacciones simultáneas (sp_asignar_unidad, FOR UPDATE)
 
