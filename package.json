@@ -3,17 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "description": "Sistema de administración de banco de sangre (Proyecto integrador ABD, UDG/CUCEI)",
-  "workspaces": ["apps/*", "db"],
-  "engines": { "node": ">=20 <21" },
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20 <21"
+  },
   "scripts": {
     "db:up": "docker compose up -d --wait db",
     "db:down": "docker compose down",
     "db:migrate": "npm run migrate -w db",
     "db:reset": "npm run reset -w db",
     "db:sintetico": "npm run sintetico -w db --",
-    "dev": "npm run dev --workspaces --if-present",
-    "build": "npm run build -w apps/api && npm run build -w apps/web",
-    "test": "npm test -w apps/api",
+    "dev": "concurrently -n api,web -c blue,magenta \"npm run dev -w @banco/api\" \"npm run dev -w @banco/web\"",
+    "build": "npm run build -w @banco/api && npm run build -w @banco/web",
+    "test": "npm test -w @banco/api",
     "lint": "npm run lint --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
   }
 }
