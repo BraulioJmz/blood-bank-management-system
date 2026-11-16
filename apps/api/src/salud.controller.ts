@@ -1,4 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
+import { Publico } from './auth/decoradores';
 import { DbService } from './db/db.service';
 
 @Controller('salud')
@@ -6,6 +7,7 @@ export class SaludController {
   constructor(private readonly db: DbService) {}
 
   /** Verifica que la API llega a PostgreSQL (sin datos de negocio). */
+  @Publico()
   @Get()
   async salud() {
     const { rows } = await this.db.pool.query<{ ahora: string }>(
