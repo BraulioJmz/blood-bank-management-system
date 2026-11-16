@@ -206,3 +206,31 @@ BEGIN
              FOR EACH ROW EXECUTE FUNCTION tg_bitacora(%L)', t.tabla, t.pk);
     END LOOP;
 END $$;
+
+-- =============================================================================
+-- Bitácora inmodificable
+-- =============================================================================
+-- Capa 1 (privilegios): ningún rol de la app tiene INSERT/UPDATE/DELETE/TRUNCATE;
+-- rol_admin solo SELECT. REVOKE explícito para que quede documentado.
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON bitacora_auditoria
+    FROM PUBLIC, rol_recepcion, rol_laboratorio, rol_inventario, rol_hospital, rol_admin;
+
+-- Capa 2 (trigger): rechaza UPDATE/DELETE incluso al dueño (que tiene todos los
+-- privilegios sobre sus tablas). TRUNCATE no dispara triggers de fila, así que
+-- necesita su propio trigger FOR EACH STATEMENT.
+-- Límite honesto: el dueño o un superusuario podrían hacer DROP TRIGGER; eso se
+-- mitiga operativamente (nadie usa banco_owner en el día a día) y queda en el log.
+CREATE FUNCTION tg_bitacora_inmutable() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    RAISE EXCEPTION 'La bitácora de auditoría es de solo inserción (% no permitido)', TG_OP
+        USING ERRCODE = 'BS013';
+END $$;
+
+CREATE TRIGGER tg_bitacora_inmutable
+BEFORE UPDATE OR DELETE ON bitacora_auditoria
+FOR EACH ROW EXECUTE FUNCTION tg_bitacora_inmutable();
+
+CREATE TRIGGER tg_bitacora_no_truncate
+BEFORE TRUNCATE ON bitacora_auditoria
+FOR EACH STATEMENT EXECUTE FUNCTION tg_bitacora_inmutable();
