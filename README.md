@@ -40,6 +40,10 @@ npm run dev               # API en :3000 y web en :5173
 | `npm run dev` | API + web en paralelo |
 | `npm test` | Pruebas (Jest contra `banco_test`) |
 | `npm run lint` | ESLint en api y web |
+| `npm run test:evidencia` | Corre las pruebas y escribe `docs/evidencias/pruebas.md` y `resultados-*.md` |
+| `npm run benchmark` | Benchmark de índices con ≥100k unidades → `docs/evidencias/benchmark.md` |
+| `npm run db:backup -- [base]` / `npm run db:restore -- <dump> [base]` | Respaldo `pg_dump -Fc` / restauración cronometrada |
+| `npm run prueba:restauracion` | Respaldo → falla simulada → restauración → `docs/evidencias/restauracion.md` |
 
 ## Usuarios demo por rol
 
