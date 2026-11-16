@@ -66,3 +66,64 @@ END $$;
 CREATE TRIGGER tg_usuario_hospital
 BEFORE INSERT OR UPDATE OF id_rol, id_hospital ON usuario
 FOR EACH ROW EXECUTE FUNCTION tg_usuario_hospital();
+
+-- =============================================================================
+-- Patrón SECURITY DEFINER (se repite en todo el archivo)
+-- =============================================================================
+-- Una función SECURITY DEFINER corre con los privilegios de su DUEÑO (banco_owner),
+-- no de quien la llama. Así los roles de la app pueden cambiar unidades sin tener
+-- UPDATE sobre unidad_sangre: solo pueden hacerlo a través de estas funciones,
+-- que validan las reglas. Para que sea seguro:
+--   1. SET search_path = banco, pg_temp: el search_path queda fijo dentro de la
+--      función. Si no, quien la llama podría crear un objeto homónimo (p. ej. una
+--      tabla o un operador "=") en un esquema propio o en pg_temp que se resolviera
+--      antes y ejecutara código con privilegios del dueño. pg_temp va al final
+--      porque, si no se menciona, PostgreSQL lo busca PRIMERO.
+--   2. REVOKE EXECUTE … FROM PUBLIC: por defecto toda función es ejecutable por
+--      PUBLIC (todos los roles). Se revoca y se otorga solo al rol que la usa
+--      (los GRANT están en 004_seguridad, donde se crean los roles).
+-- Las funciones de trigger no necesitan GRANT EXECUTE: PostgreSQL no comprueba
+-- EXECUTE al disparar un trigger, solo el privilegio sobre la tabla (INSERT/UPDATE).
+-- =============================================================================
+
+-- ------------------------------------------------------ Registro de donación --
+-- BEFORE INSERT: valida la edad del donante y toma el capturista del contexto.
+CREATE FUNCTION tg_donacion_validar() RETURNS trigger
+LANGUAGE plpgsql AS $$
+DECLARE
+    v_nac  date;
+    v_edad integer;
+BEGIN
+    SELECT fecha_nacimiento INTO v_nac FROM donante WHERE id_donante = NEW.id_donante;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'El donante % no existe', NEW.id_donante USING ERRCODE = 'BS007';
+    END IF;
+    v_edad := date_part('year', age(NEW.fecha_donacion::date, v_nac));
+    IF v_edad NOT BETWEEN 18 AND 65 THEN
+        RAISE EXCEPTION 'El donante tiene % años; solo pueden donar personas de 18 a 65', v_edad
+            USING ERRCODE = 'BS008';
+    END IF;
+    NEW.id_usuario := coalesce(NEW.id_usuario, fn_usuario_actual());
+    RETURN NEW;
+END $$;
+
+CREATE TRIGGER tg_donacion_validar
+BEFORE INSERT ON donacion
+FOR EACH ROW EXECUTE FUNCTION tg_donacion_validar();
+
+-- AFTER INSERT: crea las 5 pruebas obligatorias en 'pendiente'.
+-- SECURITY DEFINER: recepción registra la donación, pero no tiene (ni debe tener)
+-- INSERT sobre prueba_tamizaje.
+CREATE FUNCTION tg_donacion_crear_pruebas() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = banco, pg_temp AS $$
+BEGIN
+    INSERT INTO prueba_tamizaje (id_donacion, tipo_prueba)
+    SELECT NEW.id_donacion, t
+    FROM unnest(ARRAY['VIH', 'VHB', 'VHC', 'Sifilis', 'Chagas']) AS t;
+    RETURN NULL;  -- el valor de retorno de un trigger AFTER se ignora
+END $$;
+REVOKE EXECUTE ON FUNCTION tg_donacion_crear_pruebas() FROM PUBLIC;
+
+CREATE TRIGGER tg_donacion_crear_pruebas
+AFTER INSERT ON donacion
+FOR EACH ROW EXECUTE FUNCTION tg_donacion_crear_pruebas();
