@@ -1,6 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { PgErrorFilter } from './common/pg-error.filter';
 import { config } from './config';
 
 export function configurarApp(app: import('@nestjs/common').INestApplication) {
@@ -13,6 +14,7 @@ export function configurarApp(app: import('@nestjs/common').INestApplication) {
       transform: true,
     }),
   );
+  app.useGlobalFilters(new PgErrorFilter());
   app.enableShutdownHooks();
   return app;
 }
