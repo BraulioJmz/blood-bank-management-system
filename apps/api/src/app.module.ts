@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { DbModule } from './db/db.module';
 import { DonantesModule } from './donantes/donantes.module';
@@ -19,6 +20,7 @@ import { TrazabilidadModule } from './trazabilidad/trazabilidad.module';
     HospitalesModule,
     SolicitudesModule,
     TrazabilidadModule,
+    AdminModule,
   ],
   controllers: [SaludController],
 })
