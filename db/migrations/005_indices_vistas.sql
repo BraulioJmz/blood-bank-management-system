@@ -150,3 +150,45 @@ SELECT u.id_unidad, u.estado, fn_tipo_etiqueta(t.grupo_abo, t.factor_rh) AS tipo
   LEFT JOIN hospital ho ON ho.id_hospital = s.id_hospital;
 
 GRANT SELECT ON v_trazabilidad_unidad TO rol_inventario, rol_admin;
+
+-- ----------------------------------------------- Vista materializada: dashboard --
+-- Una vista materializada GUARDA el resultado (como una tabla). Leerla es instantáneo
+-- aunque haya cientos de miles de unidades; el costo es que hay que refrescarla.
+-- Aquí: conteo de unidades por componente × estado.
+CREATE MATERIALIZED VIEW mv_dashboard AS
+SELECT c.id_componente, c.nombre AS componente, e.estado,
+       count(u.id_unidad)::integer AS total,
+       now() AS refrescado_en
+  FROM componente c
+ CROSS JOIN unnest(ARRAY['cuarentena', 'disponible', 'asignada', 'entregada', 'caducada', 'descartada']) AS e(estado)
+  LEFT JOIN unidad_sangre u ON u.id_componente = c.id_componente AND u.estado = e.estado
+ GROUP BY c.id_componente, c.nombre, e.estado;
+
+-- REFRESH … CONCURRENTLY exige un índice ÚNICO: compara el resultado nuevo contra el
+-- anterior fila por fila y aplica solo las diferencias, sin bloquear a los lectores.
+-- (Un REFRESH normal toma ACCESS EXCLUSIVE y bloquea las lecturas mientras corre.)
+CREATE UNIQUE INDEX ux_mv_dashboard ON mv_dashboard (id_componente, estado);
+
+-- Refresca solo si la foto tiene más de p_max_edad. Solo el dueño puede hacer REFRESH,
+-- por eso es SECURITY DEFINER.
+-- pg_try_advisory_xact_lock: candado "de aviso" a nivel aplicación (no bloquea filas
+-- ni tablas). Si 20 peticiones del dashboard llegan juntas, solo la primera refresca;
+-- las demás no esperan y leen la foto vigente. Se libera solo al terminar la transacción.
+CREATE FUNCTION fn_refrescar_dashboard(p_max_edad interval DEFAULT interval '1 minute')
+RETURNS timestamptz
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = banco, pg_temp AS $$
+DECLARE
+    v_ultima timestamptz;
+BEGIN
+    SELECT max(refrescado_en) INTO v_ultima FROM mv_dashboard;
+    IF v_ultima < now() - p_max_edad
+       AND pg_try_advisory_xact_lock(hashtext('banco.mv_dashboard')) THEN
+        REFRESH MATERIALIZED VIEW CONCURRENTLY mv_dashboard;
+        SELECT max(refrescado_en) INTO v_ultima FROM mv_dashboard;
+    END IF;
+    RETURN v_ultima;
+END $$;
+REVOKE EXECUTE ON FUNCTION fn_refrescar_dashboard(interval) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fn_refrescar_dashboard(interval)
+    TO rol_recepcion, rol_laboratorio, rol_inventario, rol_hospital, rol_admin;
+GRANT SELECT ON mv_dashboard TO rol_recepcion, rol_laboratorio, rol_inventario, rol_hospital, rol_admin;
