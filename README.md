@@ -43,7 +43,19 @@ npm run dev               # API en :3000 y web en :5173
 
 ## Usuarios demo por rol
 
-_Se completa en `feature/datos-sinteticos`._
+Contraseña de todos: **`Demo2026!`** (solo datos sintéticos; cargados por `db/seeds/`).
+
+| Usuario | Rol | Qué puede hacer |
+|---|---|---|
+| `recepcion` | recepción | Registrar donantes y donaciones; ver el avance del tamizaje |
+| `laboratorio` | laboratorio | Capturar resultados de tamizaje; fraccionar donaciones |
+| `inventario` | inventario | Inventario, semáforo de caducidad, bajas, asignación manual/FEFO, entregas, trazabilidad |
+| `hospital.norte` | hospital (Hospital General Norte) | Crear y seguir **sus** solicitudes (RLS) |
+| `hospital.sur` | hospital (Hospital Regional Sur) | Ídem; no ve las del Norte |
+| `admin` | admin | Usuarios, hospitales, bitácora de auditoría, consulta global |
+
+Población/muestra: 6 usuarios demo (uno por rol, dos de hospital) y 4 hospitales; los datos de volumen
+se generan con `npm run db:sintetico`.
 
 ## Documentación
 
