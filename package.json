@@ -20,9 +20,14 @@
     "build": "npm run build -w @banco/api && npm run build -w @banco/web",
     "test": "npm test -w @banco/api",
     "lint": "npm run lint --workspaces --if-present",
-    "test:evidencia": "bash scripts/evidencia-pruebas.sh"
+    "test:evidencia": "bash scripts/evidencia-pruebas.sh",
+    "benchmark": "tsx scripts/benchmark-indices.ts",
+    "db:backup": "bash scripts/backup.sh",
+    "db:restore": "bash scripts/restore.sh",
+    "prueba:restauracion": "bash scripts/prueba-restauracion.sh"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "tsx": "^4.19.2"
   }
 }
