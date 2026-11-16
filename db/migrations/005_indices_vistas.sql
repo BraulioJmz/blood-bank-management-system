@@ -114,3 +114,39 @@ GRANT SELECT ON v_disponibilidad
     TO rol_recepcion, rol_laboratorio, rol_inventario, rol_hospital, rol_admin;
 GRANT SELECT ON v_inventario_unidades, v_unidades_por_caducar TO rol_laboratorio, rol_inventario, rol_admin;
 GRANT SELECT ON v_solicitudes_pendientes TO rol_inventario, rol_hospital, rol_admin;
+
+-- ---------------------------------------------------------- Trazabilidad --
+-- Una fila por unidad con toda su cadena (hemovigilancia, NOM-253):
+--   unidad → donación → donante → pruebas → unidades hermanas → asignación → hospital
+-- Las listas (pruebas, hermanas) se agregan como jsonb con subconsultas correlacionadas;
+-- consultada por id_unidad (WHERE id_unidad = $1) cada subconsulta usa un índice.
+-- security_invoker: contiene datos personales del donante; solo la ven roles con
+-- SELECT sobre donante (inventario, admin).
+CREATE VIEW v_trazabilidad_unidad WITH (security_invoker = true) AS
+SELECT u.id_unidad, u.estado, fn_tipo_etiqueta(t.grupo_abo, t.factor_rh) AS tipo,
+       c.nombre AS componente, u.fecha_obtencion, u.fecha_caducidad,
+       d.id_donacion, d.fecha_donacion, d.tipo_donacion, d.volumen_ml,
+       cap.nombre AS capturo,
+       dn.id_donante, dn.nombre AS donante, dn.sexo, dn.fecha_nacimiento,
+       (SELECT jsonb_agg(jsonb_build_object('tipo', p.tipo_prueba, 'resultado', p.resultado,
+                                            'fecha', p.fecha_resultado) ORDER BY p.tipo_prueba)
+          FROM prueba_tamizaje p WHERE p.id_donacion = d.id_donacion) AS pruebas,
+       (SELECT jsonb_agg(jsonb_build_object('id_unidad', h.id_unidad, 'componente', hc.nombre,
+                                            'estado', h.estado) ORDER BY h.id_unidad)
+          FROM unidad_sangre h JOIN componente hc USING (id_componente)
+         WHERE h.id_donacion = d.id_donacion AND h.id_unidad <> u.id_unidad) AS hermanas,
+       a.id_asignacion, a.fecha_asignacion, aut.nombre AS autorizo,
+       s.id_solicitud, s.prioridad, s.estado AS estado_solicitud,
+       ho.id_hospital, ho.nombre AS hospital
+  FROM unidad_sangre u
+  JOIN tipo_sanguineo t USING (id_tipo_sanguineo)
+  JOIN componente c USING (id_componente)
+  JOIN donacion d USING (id_donacion)
+  JOIN usuario cap ON cap.id_usuario = d.id_usuario
+  JOIN donante dn ON dn.id_donante = d.id_donante
+  LEFT JOIN asignacion a ON a.id_unidad = u.id_unidad
+  LEFT JOIN usuario aut ON aut.id_usuario = a.id_usuario
+  LEFT JOIN solicitud s ON s.id_solicitud = a.id_solicitud
+  LEFT JOIN hospital ho ON ho.id_hospital = s.id_hospital;
+
+GRANT SELECT ON v_trazabilidad_unidad TO rol_inventario, rol_admin;
