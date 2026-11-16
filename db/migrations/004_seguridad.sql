@@ -116,3 +116,38 @@ REVOKE EXECUTE ON FUNCTION fn_credenciales_login(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION fn_credenciales_login(text) TO app_login;
 -- app_login necesita USAGE en el esquema solo para resolver el nombre de la función.
 GRANT USAGE ON SCHEMA banco TO app_login;
+
+-- =============================================================================
+-- Row-Level Security por hospital
+-- =============================================================================
+-- Con RLS activa, cada SELECT/INSERT/UPDATE/DELETE sobre la tabla agrega
+-- automáticamente el predicado de las políticas que aplican al rol actual. Si
+-- ninguna política aplica, el rol no ve NINGUNA fila (falla segura).
+-- El dueño (banco_owner) no está sujeto a RLS salvo con FORCE ROW LEVEL SECURITY;
+-- por eso las funciones SECURITY DEFINER (asignación) ven todas las solicitudes.
+-- El hospital del usuario viene de app.id_hospital (set_config en withContext):
+-- un valor de transacción que el cliente no puede alterar porque nunca ejecuta SQL libre.
+ALTER TABLE solicitud ENABLE ROW LEVEL SECURITY;
+
+-- USING filtra lo que se lee; WITH CHECK valida lo que se escribe: un hospital no
+-- puede crear una solicitud a nombre de otro aunque mande otro id_hospital.
+CREATE POLICY pol_solicitud_hospital ON solicitud
+    FOR ALL TO rol_hospital
+    USING (id_hospital = fn_hospital_actual())
+    WITH CHECK (id_hospital = fn_hospital_actual());
+
+CREATE POLICY pol_solicitud_personal ON solicitud
+    FOR SELECT TO rol_inventario, rol_admin
+    USING (true);
+
+ALTER TABLE asignacion ENABLE ROW LEVEL SECURITY;
+
+-- La subconsulta sobre solicitud también pasa por la RLS de solicitud: para el
+-- hospital, EXISTS solo encuentra sus propias solicitudes.
+CREATE POLICY pol_asignacion_hospital ON asignacion
+    FOR SELECT TO rol_hospital
+    USING (EXISTS (SELECT 1 FROM solicitud s WHERE s.id_solicitud = asignacion.id_solicitud));
+
+CREATE POLICY pol_asignacion_personal ON asignacion
+    FOR SELECT TO rol_inventario, rol_admin
+    USING (true);
