@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
 import { DbModule } from './db/db.module';
 import { DonantesModule } from './donantes/donantes.module';
+import { HospitalesModule } from './hospitales/hospitales.module';
 import { InventarioModule } from './inventario/inventario.module';
 import { LaboratorioModule } from './laboratorio/laboratorio.module';
 import { SaludController } from './salud.controller';
+import { SolicitudesModule } from './solicitudes/solicitudes.module';
 
 @Module({
   imports: [
@@ -13,6 +15,8 @@ import { SaludController } from './salud.controller';
     DonantesModule,
     LaboratorioModule,
     InventarioModule,
+    HospitalesModule,
+    SolicitudesModule,
   ],
   controllers: [SaludController],
 })
