@@ -426,3 +426,117 @@ BEGIN
     END IF;
 END $$;
 REVOKE EXECUTE ON PROCEDURE sp_asignar_automatica(integer, integer) FROM PUBLIC;
+
+-- ------------------------------------------- Máquina de estados de la unidad --
+-- Defensa en profundidad: aunque alguien con UPDATE (el dueño) cambie el estado a mano,
+-- solo se permiten las transiciones del dominio.
+CREATE FUNCTION tg_unidad_transicion() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF NEW.estado = OLD.estado THEN
+        RETURN NEW;
+    END IF;
+    IF NOT (OLD.estado, NEW.estado) IN (
+        ('cuarentena', 'disponible'), ('cuarentena', 'descartada'), ('cuarentena', 'caducada'),
+        ('disponible', 'asignada'),   ('disponible', 'descartada'), ('disponible', 'caducada'),
+        ('asignada',   'entregada'),
+        ('caducada',   'descartada')
+    ) THEN
+        RAISE EXCEPTION 'Transición de estado inválida para la unidad %: % → %',
+            OLD.id_unidad, OLD.estado, NEW.estado USING ERRCODE = 'BS010';
+    END IF;
+    RETURN NEW;
+END $$;
+
+CREATE TRIGGER tg_unidad_transicion
+BEFORE UPDATE OF estado ON unidad_sangre
+FOR EACH ROW EXECUTE FUNCTION tg_unidad_transicion();
+
+-- --------------------------------------------------------------- Caducidad --
+-- Pasa a 'caducada' las unidades vencidas que no se asignaron. Se invoca al consultar
+-- dashboard/inventario (sin cron). Usa un CTE "escritor": el UPDATE … RETURNING
+-- alimenta el INSERT de movimientos en UNA sola sentencia (atómica, un solo recorrido).
+CREATE FUNCTION fn_marcar_caducadas() RETURNS integer
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = banco, pg_temp AS $$
+DECLARE
+    v_n integer;
+BEGIN
+    WITH vencidas AS (
+        UPDATE unidad_sangre SET estado = 'caducada'
+         WHERE estado IN ('cuarentena', 'disponible') AND fecha_caducidad < current_date
+        RETURNING id_unidad, fecha_caducidad
+    ), mov AS (
+        INSERT INTO movimiento_inventario (id_unidad, id_usuario, tipo_movimiento, motivo)
+        SELECT id_unidad, fn_usuario_actual_opcional(), 'cambio_estado', 'Caducó el ' || fecha_caducidad
+          FROM vencidas
+        RETURNING 1
+    )
+    SELECT count(*) INTO v_n FROM mov;
+    RETURN v_n;
+END $$;
+REVOKE EXECUTE ON FUNCTION fn_marcar_caducadas() FROM PUBLIC;
+
+-- ------------------------------------------------------------------- Bajas --
+CREATE FUNCTION fn_dar_baja(p_id_unidad integer, p_motivo text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = banco, pg_temp AS $$
+DECLARE
+    v_estado text;
+BEGIN
+    PERFORM fn_usuario_actual();
+    IF coalesce(trim(p_motivo), '') = '' THEN
+        RAISE EXCEPTION 'El motivo de la baja es obligatorio' USING ERRCODE = 'BS010';
+    END IF;
+    SELECT estado INTO v_estado FROM unidad_sangre WHERE id_unidad = p_id_unidad FOR UPDATE;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'La unidad % no existe', p_id_unidad USING ERRCODE = 'BS007';
+    END IF;
+    IF v_estado NOT IN ('cuarentena', 'disponible', 'caducada') THEN
+        RAISE EXCEPTION 'La unidad % está % y no se puede dar de baja', p_id_unidad, v_estado
+            USING ERRCODE = 'BS010';
+    END IF;
+    UPDATE unidad_sangre SET estado = 'descartada' WHERE id_unidad = p_id_unidad;
+    PERFORM fn_registrar_movimiento(p_id_unidad, 'baja', trim(p_motivo));
+END $$;
+REVOKE EXECUTE ON FUNCTION fn_dar_baja(integer, text) FROM PUBLIC;
+
+-- ----------------------------------------------------------------- Entrega --
+CREATE FUNCTION fn_entregar_unidad(p_id_unidad integer) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = banco, pg_temp AS $$
+DECLARE
+    v_estado text;
+BEGIN
+    PERFORM fn_usuario_actual();
+    SELECT estado INTO v_estado FROM unidad_sangre WHERE id_unidad = p_id_unidad FOR UPDATE;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'La unidad % no existe', p_id_unidad USING ERRCODE = 'BS007';
+    END IF;
+    IF v_estado <> 'asignada' THEN
+        RAISE EXCEPTION 'Solo se entregan unidades asignadas (la unidad % está %)', p_id_unidad, v_estado
+            USING ERRCODE = 'BS010';
+    END IF;
+    UPDATE unidad_sangre SET estado = 'entregada' WHERE id_unidad = p_id_unidad;
+    PERFORM fn_registrar_movimiento(p_id_unidad, 'cambio_estado', 'Entregada al hospital');
+END $$;
+REVOKE EXECUTE ON FUNCTION fn_entregar_unidad(integer) FROM PUBLIC;
+
+-- -------------------------------------------------- Cancelación de solicitud --
+-- Solo se cancela lo que no tiene unidades asignadas (no se "des-asigna" sangre).
+-- SECURITY INVOKER (default): corre con los privilegios de quien llama, así la RLS de
+-- solicitud (004) impide que un hospital cancele solicitudes de otro: para él esas
+-- filas simplemente no existen.
+CREATE FUNCTION fn_cancelar_solicitud(p_id_solicitud integer) RETURNS void
+LANGUAGE plpgsql SET search_path = banco, pg_temp AS $$
+DECLARE
+    v_estado text;
+BEGIN
+    SELECT estado INTO v_estado FROM solicitud WHERE id_solicitud = p_id_solicitud FOR UPDATE;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'La solicitud % no existe', p_id_solicitud USING ERRCODE = 'BS007';
+    END IF;
+    IF v_estado <> 'pendiente' THEN
+        RAISE EXCEPTION 'Solo se cancelan solicitudes pendientes (la % está %)', p_id_solicitud, v_estado
+            USING ERRCODE = 'BS010';
+    END IF;
+    UPDATE solicitud SET estado = 'cancelada' WHERE id_solicitud = p_id_solicitud;
+END $$;
+REVOKE EXECUTE ON FUNCTION fn_cancelar_solicitud(integer) FROM PUBLIC;
