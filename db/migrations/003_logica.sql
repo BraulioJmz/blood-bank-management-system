@@ -127,3 +127,94 @@ REVOKE EXECUTE ON FUNCTION tg_donacion_crear_pruebas() FROM PUBLIC;
 CREATE TRIGGER tg_donacion_crear_pruebas
 AFTER INSERT ON donacion
 FOR EACH ROW EXECUTE FUNCTION tg_donacion_crear_pruebas();
+
+-- ------------------------------------------------------ Movimientos (interno) --
+CREATE FUNCTION fn_registrar_movimiento(p_id_unidad integer, p_tipo text, p_motivo text)
+RETURNS void
+LANGUAGE sql SECURITY DEFINER SET search_path = banco, pg_temp AS $$
+    INSERT INTO movimiento_inventario (id_unidad, id_usuario, tipo_movimiento, motivo)
+    VALUES (p_id_unidad, fn_usuario_actual_opcional(), p_tipo, p_motivo)
+$$;
+REVOKE EXECUTE ON FUNCTION fn_registrar_movimiento(integer, text, text) FROM PUBLIC;
+
+-- ---------------------------------------- Falla segura: liberación / descarte --
+-- Evalúa las pruebas de una donación y mueve sus unidades:
+--   * alguna 'reactivo'          → todas las unidades (cuarentena/disponible) a 'descartada' + baja
+--   * las 5 'no_reactivo'         → unidades en cuarentena a 'disponible' (o 'caducada' si ya venció)
+--   * en otro caso (pendientes)   → no cambia nada: la unidad sigue en cuarentena (falla segura)
+--
+-- CONCURRENCIA: dos laboratoristas pueden capturar a la vez las 2 últimas pruebas de
+-- la misma donación. En READ COMMITTED, cada transacción no ve el cambio no confirmado
+-- de la otra: cada una contaría 4/5 y NINGUNA liberaría las unidades (anomalía de
+-- "write skew"). Por eso se bloquea primero la fila de la donación con FOR UPDATE:
+-- la segunda transacción espera a que la primera haga COMMIT y, como en READ COMMITTED
+-- cada sentencia toma un snapshot nuevo, su conteo posterior sí ve las 5 pruebas.
+CREATE FUNCTION fn_evaluar_tamizaje(p_id_donacion integer) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = banco, pg_temp AS $$
+DECLARE
+    v_reactivas   text;
+    v_no_reactivo integer;
+    r             record;
+BEGIN
+    PERFORM 1 FROM donacion WHERE id_donacion = p_id_donacion FOR UPDATE;
+
+    SELECT string_agg(tipo_prueba, ', ' ORDER BY tipo_prueba) FILTER (WHERE resultado = 'reactivo'),
+           count(*) FILTER (WHERE resultado = 'no_reactivo')
+      INTO v_reactivas, v_no_reactivo
+      FROM prueba_tamizaje
+     WHERE id_donacion = p_id_donacion;
+
+    IF v_reactivas IS NOT NULL THEN
+        FOR r IN
+            UPDATE unidad_sangre SET estado = 'descartada'
+             WHERE id_donacion = p_id_donacion AND estado IN ('cuarentena', 'disponible')
+            RETURNING id_unidad
+        LOOP
+            PERFORM fn_registrar_movimiento(r.id_unidad, 'baja', 'Tamizaje reactivo: ' || v_reactivas);
+        END LOOP;
+    ELSIF v_no_reactivo = 5 THEN
+        FOR r IN
+            UPDATE unidad_sangre
+               SET estado = CASE WHEN fecha_caducidad < current_date THEN 'caducada' ELSE 'disponible' END
+             WHERE id_donacion = p_id_donacion AND estado = 'cuarentena'
+            RETURNING id_unidad, estado
+        LOOP
+            PERFORM fn_registrar_movimiento(r.id_unidad, 'cambio_estado',
+                CASE r.estado WHEN 'disponible' THEN 'Liberada: 5 pruebas no reactivas'
+                              ELSE 'Caducada al liberarse' END);
+        END LOOP;
+    END IF;
+END $$;
+REVOKE EXECUTE ON FUNCTION fn_evaluar_tamizaje(integer) FROM PUBLIC;
+
+-- BEFORE UPDATE: un resultado definitivo no se puede cambiar (integridad del tamizaje)
+-- y la fecha de resultado la pone la BD, no el cliente.
+CREATE FUNCTION tg_prueba_validar() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF OLD.resultado <> 'pendiente' THEN
+        RAISE EXCEPTION 'La prueba % de la donación % ya tiene resultado (%); no se puede modificar',
+            OLD.tipo_prueba, OLD.id_donacion, OLD.resultado USING ERRCODE = 'BS014';
+    END IF;
+    NEW.fecha_resultado := CASE WHEN NEW.resultado = 'pendiente' THEN NULL ELSE now() END;
+    RETURN NEW;
+END $$;
+
+CREATE TRIGGER tg_prueba_validar
+BEFORE UPDATE ON prueba_tamizaje
+FOR EACH ROW EXECUTE FUNCTION tg_prueba_validar();
+
+-- AFTER UPDATE: dispara la evaluación. SECURITY DEFINER porque laboratorio no tiene
+-- UPDATE sobre unidad_sangre ni INSERT sobre movimiento_inventario.
+CREATE FUNCTION tg_prueba_evaluar() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = banco, pg_temp AS $$
+BEGIN
+    PERFORM fn_evaluar_tamizaje(NEW.id_donacion);
+    RETURN NULL;
+END $$;
+REVOKE EXECUTE ON FUNCTION tg_prueba_evaluar() FROM PUBLIC;
+
+CREATE TRIGGER tg_prueba_evaluar
+AFTER UPDATE OF resultado ON prueba_tamizaje
+FOR EACH ROW WHEN (NEW.resultado <> 'pendiente')
+EXECUTE FUNCTION tg_prueba_evaluar();
