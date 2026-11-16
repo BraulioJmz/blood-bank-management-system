@@ -7,9 +7,11 @@ import path from 'node:path';
 import { PoolClient } from 'pg';
 import { ContextoInvalidoError, RolApp } from '../../src/db/contexto';
 import {
+  asignar,
   como,
   conOwner,
   conSuper,
+  crearDonacion,
   crearPoolApp,
   crearSolicitud,
   ERITRO,
@@ -286,6 +288,51 @@ describe('Seguridad en PostgreSQL', () => {
         }
         registrar(`banco_owner: ${sql.split(' ')[0]}`, 'BS013', codigo);
       }
+    });
+
+    it('una asignación hecha por rol_inventario queda con ese rol y ese usuario, no con el dueño', async () => {
+      const {
+        unidades: [unidad],
+      } = await crearDonacion(pool, u, { tipo, componentes: [eritro] });
+      const s = await crearSolicitud(pool, u.norte, tipo, eritro);
+      await asignar(pool, u.inventario, s, unidad);
+
+      const filasBitacora = await como(
+        pool,
+        u.admin,
+        async (c) =>
+          (
+            await c.query<{
+              tabla: string;
+              operacion: string;
+              usuario_bd: string;
+              usuario_app: string;
+              rol_app: string;
+            }>(
+              `SELECT tabla, operacion, usuario_bd, usuario_app, rol_app
+               FROM banco.bitacora_auditoria
+              WHERE (tabla = 'asignacion' AND valores_nuevos ->> 'id_unidad' = $1)
+                 OR (tabla = 'unidad_sangre' AND operacion = 'UPDATE' AND id_registro = $2
+                     AND valores_nuevos ->> 'estado' = 'asignada')
+              ORDER BY id_bitacora`,
+              [String(unidad), unidad],
+            )
+          ).rows,
+      );
+      const asig = filasBitacora.find((f) => f.tabla === 'asignacion');
+      const upd = filasBitacora.find((f) => f.tabla === 'unidad_sangre');
+      expect(asig).toBeDefined();
+      expect(upd).toBeDefined();
+      for (const f of [asig!, upd!]) {
+        // La identidad real sale de withContext (app.rol / app.id_usuario)…
+        expect(f.rol_app).toBe('rol_inventario');
+        expect(f.usuario_app).toBe(String(u.inventario.idUsuario));
+        // …porque dentro de SECURITY DEFINER current_user es el dueño.
+        expect(f.usuario_bd).toBe('banco_owner');
+      }
+      filas.push(
+        `| Bitácora de asignación: rol_app / usuario_app / usuario_bd | rol_inventario / ${u.inventario.idUsuario} / banco_owner | ${asig!.rol_app} / ${asig!.usuario_app} / ${asig!.usuario_bd} |`,
+      );
     });
   });
 });
