@@ -373,3 +373,56 @@ BEGIN
     PERFORM fn_recalcular_solicitud(p_id_solicitud);
 END $$;
 REVOKE EXECUTE ON PROCEDURE sp_asignar_unidad(integer, integer, integer) FROM PUBLIC;
+
+-- ----------------------------------------------- Asignación automática FEFO --
+-- FEFO (First Expired, First Out): toma primero las unidades que caducan antes,
+-- para reducir el desecho por caducidad.
+--
+-- FOR UPDATE SKIP LOCKED: si otra transacción ya tiene bloqueada una unidad (porque
+-- la está asignando a otra solicitud), esta consulta la SALTA en vez de esperar.
+-- Así dos asignaciones automáticas simultáneas se reparten unidades distintas sin
+-- bloquearse entre sí (patrón de "cola de trabajo"). En la manual NO se usa SKIP
+-- LOCKED: ahí el usuario eligió una unidad concreta y lo correcto es esperar y
+-- validar.
+CREATE PROCEDURE sp_asignar_automatica(p_id_solicitud integer, INOUT p_asignadas integer DEFAULT 0)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = banco, pg_temp AS $$
+DECLARE
+    s          solicitud%ROWTYPE;
+    v_faltan   integer;
+    v_unidad   integer;
+    v_id       integer;
+BEGIN
+    p_asignadas := 0;
+    SELECT * INTO s FROM solicitud WHERE id_solicitud = p_id_solicitud FOR UPDATE;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'La solicitud % no existe', p_id_solicitud USING ERRCODE = 'BS007';
+    END IF;
+    IF s.estado NOT IN ('pendiente', 'parcial') THEN
+        RAISE EXCEPTION 'La solicitud % está %; no admite más asignaciones', p_id_solicitud, s.estado
+            USING ERRCODE = 'BS005';
+    END IF;
+    v_faltan := s.cantidad - (SELECT count(*) FROM asignacion WHERE id_solicitud = p_id_solicitud);
+
+    FOR v_unidad IN
+        SELECT id_unidad
+          FROM unidad_sangre
+         WHERE estado = 'disponible'
+           AND id_tipo_sanguineo = s.id_tipo_sanguineo
+           AND id_componente = s.id_componente
+           AND fecha_caducidad >= current_date
+         ORDER BY fecha_caducidad, id_unidad
+         LIMIT v_faltan
+           FOR UPDATE SKIP LOCKED
+    LOOP
+        -- Reutiliza todas las validaciones y efectos de la asignación manual.
+        v_id := NULL;
+        CALL sp_asignar_unidad(p_id_solicitud, v_unidad, v_id);
+        p_asignadas := p_asignadas + 1;
+    END LOOP;
+
+    IF p_asignadas = 0 THEN
+        RAISE EXCEPTION 'No hay unidades disponibles compatibles para la solicitud %', p_id_solicitud
+            USING ERRCODE = 'BS011';
+    END IF;
+END $$;
+REVOKE EXECUTE ON PROCEDURE sp_asignar_automatica(integer, integer) FROM PUBLIC;
