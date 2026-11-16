@@ -1,0 +1,21 @@
+{
+  "name": "@banco/db",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Migraciones, seeds y datos sintéticos del banco de sangre",
+  "main": "lib/index.ts",
+  "scripts": {
+    "migrate": "tsx migrate.ts",
+    "reset": "tsx reset.ts",
+    "sintetico": "tsx sintetico/generar.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
