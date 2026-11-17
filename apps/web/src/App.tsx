@@ -10,6 +10,7 @@ import { Laboratorio } from './pages/Laboratorio';
 import { Login } from './pages/Login';
 import { Pendiente } from './pages/Pendiente';
 import { Solicitudes } from './pages/Solicitudes';
+import { Trazabilidad } from './pages/Trazabilidad';
 
 const PANTALLAS: Record<string, ReactNode> = {
   '/': <Dashboard />,
@@ -17,6 +18,7 @@ const PANTALLAS: Record<string, ReactNode> = {
   '/laboratorio': <Laboratorio />,
   '/inventario': <Inventario />,
   '/solicitudes': <Solicitudes />,
+  '/trazabilidad': <Trazabilidad />,
 };
 
 export default function App() {
