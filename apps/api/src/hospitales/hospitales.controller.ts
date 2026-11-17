@@ -35,19 +35,22 @@ export class HospitalesController {
   @Get('catalogos')
   catalogos(@Usuario() u: UsuarioActual) {
     return this.db.withContext(u, async (c) => {
-      const [tipos, componentes, hospitales, roles] = await Promise.all([
-        c.query<Fila>(
-          `SELECT id_tipo_sanguineo, grupo_abo || factor_rh AS etiqueta
-             FROM banco.tipo_sanguineo ORDER BY id_tipo_sanguineo`,
-        ),
-        c.query<Fila>(
-          'SELECT id_componente, nombre, vida_util_dias, dias_alerta_caducidad FROM banco.componente ORDER BY id_componente',
-        ),
-        c.query<Fila>(
-          'SELECT id_hospital, nombre FROM banco.hospital ORDER BY nombre',
-        ),
-        c.query<Fila>('SELECT id_rol, nombre FROM banco.rol ORDER BY id_rol'),
-      ]);
+      // Secuencial, no Promise.all: una conexión de PostgreSQL ejecuta UNA consulta a la
+      // vez (protocolo síncrono por conexión). Con varias a la vez pg las encola y avisa
+      // que pg@9 lo prohibirá; además todas van en la misma transacción de withContext.
+      const tipos = await c.query<Fila>(
+        `SELECT id_tipo_sanguineo, grupo_abo || factor_rh AS etiqueta
+           FROM banco.tipo_sanguineo ORDER BY id_tipo_sanguineo`,
+      );
+      const componentes = await c.query<Fila>(
+        'SELECT id_componente, nombre, vida_util_dias, dias_alerta_caducidad FROM banco.componente ORDER BY id_componente',
+      );
+      const hospitales = await c.query<Fila>(
+        'SELECT id_hospital, nombre FROM banco.hospital ORDER BY nombre',
+      );
+      const roles = await c.query<Fila>(
+        'SELECT id_rol, nombre FROM banco.rol ORDER BY id_rol',
+      );
       return {
         tipos: tipos.rows,
         componentes: componentes.rows,
