@@ -196,7 +196,7 @@ export function Dashboard() {
         )}
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_22rem]">
+      <div className="grid items-start gap-6 xl:grid-cols-[1fr_22rem]">
         <Card className="min-w-0">
           <CardHeader
             titulo="Disponibilidad por tipo y componente"
