@@ -11,7 +11,7 @@ datos; NestJS y React son capas delgadas.
 
 | Herramienta | Versión usada |
 |---|---|
-| Node.js | 20 LTS (20.20.0) |
+| Node.js | 22 LTS (`.nvmrc`; `nvm use`) |
 | npm | 10.8 |
 | Docker Desktop / Compose | 29.8 / v5.6 |
 | PostgreSQL (contenedor) | 16 (alpine) |

@@ -29,7 +29,7 @@ Contexto completo:
 - **Migraciones:** archivos `.sql` numerados aplicados por un runner propio mínimo (`db/migrate.ts`) con tabla `schema_migrations`. Sin herramientas que generen SQL.
 - **Pruebas:** Jest (default de Nest) contra una BD de pruebas real (`banco_test`), sin mocks de BD. Vitest para lo poco que se pruebe en el front.
 - **Datos sintéticos:** SQL con `generate_series` (volumen) + `@faker-js/faker` (locale `es_MX`) para nombres realistas.
-- Monorepo con **npm workspaces**. Node 20 LTS. Desarrollo en Mac (Apple Silicon).
+- Monorepo con **npm workspaces**. Node 22 LTS (`.nvmrc`; imágenes `node:22-alpine`). Desarrollo en Mac (Apple Silicon).
 
 ## Estructura del repo
 
