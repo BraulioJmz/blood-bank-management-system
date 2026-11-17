@@ -51,10 +51,45 @@ Ocultar menús en React y los `@Roles()` de Nest son **comodidad y defensa en pr
 barrera principal. En cada petición `withContext` hace `SET LOCAL ROLE <rol>` y fija `app.id_usuario`,
 `app.id_hospital` y `app.rol`; a partir de ahí PostgreSQL decide con:
 - `GRANT` mínimos por rol (p. ej. ningún rol tiene `UPDATE` sobre `unidad_sangre`; solo se cambia vía funciones),
-- RLS en `solicitud` por `app.id_hospital`,
+- RLS en `solicitud` y `asignacion` por `app.id_hospital` (ver «Row-Level Security» más abajo),
 - funciones `SECURITY DEFINER` con validaciones y SQLSTATE propios,
 - bitácora inmodificable por trigger.
 
 Consecuencia: un token robado da exactamente los permisos de BD de ese rol y ese hospital, nada más;
 y un error en la UI o en un guard de Nest no abre datos que la BD no permita (las pruebas de
 `seguridad.spec.ts` lo verifican ejecutando SQL directo con cada rol).
+
+### La carga sintética no pasa por la bitácora
+`npm run db:sintetico` (y `db:reset`, que lo invoca) es una **carga inicial**, no actividad de la
+aplicación. `db/sintetico/generar.sql` corre como `banco_owner` y desactiva los triggers de usuario
+(`ALTER TABLE … DISABLE TRIGGER USER`) durante la transacción:
+
+- No dispara la bitácora: esas filas no las creó ningún usuario de la app, así que no tienen
+  `rol_app` ni `usuario_app` que registrar. Escribir 100 000 filas de auditoría falsas además
+  distorsionaría el benchmark.
+- Tampoco dispara las reglas por fila (tamizaje, máquina de estados): los estados finales se
+  calculan en bloque con SQL coherente con esas reglas.
+- Las **FK sí se verifican**: son triggers internos del sistema y `DISABLE TRIGGER USER` no los toca.
+- `DISABLE TRIGGER` toma un candado `ACCESS EXCLUSIVE` (nadie más usa la tabla) y todo vuelve a
+  la normalidad con el `COMMIT`.
+
+Por eso, en una base recién reiniciada, la bitácora solo contiene los seeds (hospitales y
+usuarios demo, con `usuario_bd = banco_owner` y sin `rol_app`). Todo lo que se hace desde la app
+o desde las pruebas sí queda registrado, con el rol de la petición.
+
+## Row-Level Security
+La RLS está activa en **dos tablas**, ambas con el hospital de la sesión (`app.id_hospital`,
+fijado por `withContext`, leído con `fn_hospital_actual()`):
+
+| Tabla | Política | Rol | Regla |
+|---|---|---|---|
+| `solicitud` | `pol_solicitud_hospital` | `rol_hospital` | `USING` y `WITH CHECK id_hospital = fn_hospital_actual()`: solo lee **y crea** solicitudes de su hospital |
+| `solicitud` | `pol_solicitud_personal` | `rol_inventario`, `rol_admin` | `SELECT` de todas |
+| `asignacion` | `pol_asignacion_hospital` | `rol_hospital` | `SELECT` solo si `EXISTS` su solicitud; esa subconsulta también pasa por la RLS de `solicitud` |
+| `asignacion` | `pol_asignacion_personal` | `rol_inventario`, `rol_admin` | `SELECT` de todas |
+
+Sin una política que aplique, el rol no ve ninguna fila (falla segura). El dueño (`banco_owner`)
+no está sujeto a RLS, por eso las funciones `SECURITY DEFINER` de asignación ven todas las
+solicitudes. Las vistas que exponen estos datos (`v_solicitudes_pendientes`) son
+`security_invoker`, así que la RLS se aplica también a través de ellas. Verificado en
+`seguridad.spec.ts` y en el e2e (el hospital sur recibe 404 al pedir una solicitud del norte).

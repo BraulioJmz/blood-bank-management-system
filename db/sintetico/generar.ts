@@ -12,13 +12,20 @@ function arg(nombre: string, porDefecto: string): string {
   return i > 0 && process.argv[i + 1] ? process.argv[i + 1] : porDefecto;
 }
 
-/** Nombres realistas (faker es_MX) con semilla fija: corridas reproducibles. */
-function generarNombres(n: number): string[] {
+/**
+ * Donantes realistas (faker es_MX) con semilla fija: corridas reproducibles.
+ * - En es_MX, `lastName()` ya trae los DOS apellidos ("Zambrano Ayala"): se llama una vez.
+ * - El sexo se decide aquí y el nombre de pila se pide para ese sexo, para que el campo
+ *   `nombre` contenga solo el nombre y sea coherente con `sexo` (antes el sexo se sorteaba
+ *   en SQL por separado y salían "José Luis…, Femenino").
+ */
+function generarDonantes(n: number): { nombre: string; sexo: 'M' | 'F' }[] {
   faker.seed(2026);
-  return Array.from(
-    { length: n },
-    () => `${faker.person.firstName()} ${faker.person.lastName()} ${faker.person.lastName()}`,
-  );
+  return Array.from({ length: n }, () => {
+    const sexo = faker.datatype.boolean() ? 'F' : 'M';
+    const nombre = `${faker.person.firstName(sexo === 'F' ? 'female' : 'male')} ${faker.person.lastName()}`;
+    return { nombre, sexo };
+  });
 }
 
 export async function generar(database: string, unidades: number, dias: number) {
@@ -32,12 +39,13 @@ export async function generar(database: string, unidades: number, dias: number) 
       String(unidades),
       String(dias),
     ]);
-    await client.query('CREATE TEMP TABLE tmp_nombres (n integer, nombre text) ON COMMIT DROP');
+    await client.query('CREATE TEMP TABLE tmp_nombres (n integer, nombre text, sexo char(1)) ON COMMIT DROP');
     // Un solo INSERT con arreglos como parámetros: unnest los convierte en filas.
-    const nombres = generarNombres(donantes);
-    await client.query('INSERT INTO tmp_nombres SELECT * FROM unnest($1::int[], $2::text[])', [
-      nombres.map((_, i) => i + 1),
-      nombres,
+    const lista = generarDonantes(donantes);
+    await client.query('INSERT INTO tmp_nombres SELECT * FROM unnest($1::int[], $2::text[], $3::char[])', [
+      lista.map((_, i) => i + 1),
+      lista.map((d) => d.nombre),
+      lista.map((d) => d.sexo),
     ]);
     await client.query(readFileSync(path.join(__dirname, 'generar.sql'), 'utf8'));
     await client.query('COMMIT');

@@ -5,7 +5,7 @@
 -- (fijados antes con set_config(..., true), es decir, locales a la transacción):
 --   sintetico.unidades  número aproximado de unidades a generar
 --   sintetico.dias      ventana hacia atrás de las fechas de donación
--- y la tabla temporal tmp_nombres(n, nombre) con nombres faker es_MX.
+-- y la tabla temporal tmp_nombres(n, nombre, sexo) con nombres faker es_MX coherentes con el sexo.
 --
 -- Carga masiva: se desactivan los triggers de USUARIO (bitácora, tamizaje,
 -- validaciones) y los estados se calculan en bloque con SQL. Las FK siguen activas
@@ -40,7 +40,7 @@ WITH nuevos AS (
     INSERT INTO donante (nombre, fecha_nacimiento, sexo, id_tipo_sanguineo)
     SELECT n.nombre,
            current_date - ((20 + random() * 40) * 365)::integer,
-           CASE WHEN random() < 0.5 THEN 'M' ELSE 'F' END,
+           n.sexo,
            -- Distribución aproximada en México: O+ es la más frecuente.
            (SELECT id_tipo_sanguineo FROM tipo_sanguineo
              WHERE grupo_abo || factor_rh = CASE
