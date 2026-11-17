@@ -6,5 +6,8 @@
 import { config as cargarEnv } from 'dotenv';
 import path from 'node:path';
 
-cargarEnv({ path: path.resolve(__dirname, '..', '..', '..', '..', '.env'), quiet: true });
+cargarEnv({
+  path: path.resolve(__dirname, '..', '..', '..', '..', '.env'),
+  quiet: true,
+});
 process.env.DB_NAME = process.env.DB_TEST_NAME ?? 'banco_test';
