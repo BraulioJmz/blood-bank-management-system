@@ -1,4 +1,4 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Pool, PoolClient } from 'pg';
 import { config } from '../config';
 import { ContextoUsuario, ejecutarConContexto } from './contexto';
@@ -21,7 +21,16 @@ export class DbService implements OnModuleDestroy {
       statement_timeout: 10_000,
       application_name: 'banco-sangre-api',
     });
+    // Un cliente INACTIVO del pool puede perder su conexión (reinicio de PostgreSQL,
+    // pg_terminate_backend, DROP DATABASE en db:reset). pg lo descarta solo, pero emite
+    // 'error' en el Pool y, sin listener, Node termina el proceso. Se registra y sigue:
+    // la siguiente petición abre una conexión nueva.
+    this.pool.on('error', (e) =>
+      this.log.warn(`Conexión inactiva perdida: ${e.message}`),
+    );
   }
+
+  private readonly log = new Logger(DbService.name);
 
   /** Toda operación de negocio pasa por aquí: transacción + rol + identidad. */
   withContext<T>(
