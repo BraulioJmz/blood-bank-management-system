@@ -21,11 +21,31 @@ export interface EntradaMenu {
 }
 
 export const MENU: EntradaMenu[] = [
-  { ruta: '/', etiqueta: 'Panel', icono: LayoutDashboard, roles: ['recepcion', 'laboratorio', 'inventario', 'hospital', 'admin'] },
-  { ruta: '/donantes', etiqueta: 'Donantes y donaciones', icono: Droplet, roles: ['recepcion', 'laboratorio', 'inventario', 'admin'] },
+  {
+    ruta: '/',
+    etiqueta: 'Panel',
+    icono: LayoutDashboard,
+    roles: ['recepcion', 'laboratorio', 'inventario', 'hospital', 'admin'],
+  },
+  {
+    ruta: '/donantes',
+    etiqueta: 'Donantes y donaciones',
+    icono: Droplet,
+    roles: ['recepcion', 'laboratorio', 'inventario', 'admin'],
+  },
   { ruta: '/laboratorio', etiqueta: 'Laboratorio', icono: FlaskConical, roles: ['laboratorio'] },
-  { ruta: '/inventario', etiqueta: 'Inventario', icono: Package, roles: ['inventario', 'laboratorio', 'admin'] },
-  { ruta: '/solicitudes', etiqueta: 'Solicitudes', icono: ClipboardList, roles: ['hospital', 'inventario', 'admin'] },
+  {
+    ruta: '/inventario',
+    etiqueta: 'Inventario',
+    icono: Package,
+    roles: ['inventario', 'laboratorio', 'admin'],
+  },
+  {
+    ruta: '/solicitudes',
+    etiqueta: 'Solicitudes',
+    icono: ClipboardList,
+    roles: ['hospital', 'inventario', 'admin'],
+  },
   { ruta: '/trazabilidad', etiqueta: 'Trazabilidad', icono: GitBranch, roles: ['inventario', 'admin'] },
   { ruta: '/hospitales', etiqueta: 'Hospitales', icono: Hospital, roles: ['admin'] },
   { ruta: '/usuarios', etiqueta: 'Usuarios', icono: Users, roles: ['admin'] },
