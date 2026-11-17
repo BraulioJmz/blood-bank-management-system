@@ -145,3 +145,41 @@ export interface Movimiento {
   motivo: string | null;
   usuario: string;
 }
+
+export type EstadoSolicitud = 'pendiente' | 'parcial' | 'surtida' | 'cancelada';
+export type Prioridad = 'normal' | 'urgente' | 'emergencia';
+
+export interface Solicitud {
+  id_solicitud: number;
+  id_hospital: number;
+  hospital: string;
+  tipo: string;
+  id_tipo_sanguineo: number;
+  componente: string;
+  id_componente: number;
+  cantidad: number;
+  prioridad: Prioridad;
+  estado: EstadoSolicitud;
+  fecha_solicitud: string;
+  asignadas: number;
+}
+
+export interface SolicitudDetalle extends Omit<Solicitud, 'asignadas'> {
+  asignaciones: {
+    id_asignacion: number;
+    fecha_asignacion: string;
+    id_unidad: number;
+    estado_unidad: EstadoUnidad;
+    fecha_caducidad: string;
+    autorizo: string;
+  }[];
+}
+
+export interface UnidadCompatible {
+  id_unidad: number;
+  tipo: string;
+  componente: string;
+  fecha_caducidad: string;
+  dias_restantes: number;
+  semaforo: 'rojo' | 'amarillo' | 'verde';
+}

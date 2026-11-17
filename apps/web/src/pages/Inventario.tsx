@@ -131,7 +131,9 @@ function Movimientos({ unidad, alCerrar }: { unidad: UnidadInventario | null; al
       abierto={unidad !== null}
       alCambiar={(a) => !a && alCerrar()}
       titulo={`Historial de la unidad #${unidad ? numero(unidad.id_unidad) : ''}`}
-      descripcion={unidad && `${unidad.tipo} · ${unidad.componente} · donación #${numero(unidad.id_donacion)}`}
+      descripcion={
+        unidad && `${unidad.tipo} · ${unidad.componente} · donación #${numero(unidad.id_donacion)}`
+      }
       ancho="lg"
     >
       {consulta.isError ? (
