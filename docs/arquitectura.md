@@ -29,3 +29,32 @@ Precisiones de tipo (no cambian el modelo):
 
 Capas de seguridad (defensa en profundidad):
 GRANT por tabla y columna → RLS por hospital (`solicitud`, `asignacion`) → reglas en funciones `SECURITY DEFINER` → triggers (máquina de estados, bitácora inmutable) → `@Roles()` en Nest → menú por rol en React.
+
+## Limitaciones conocidas
+
+### El JWT vive en `localStorage`
+La web guarda el token en `localStorage` (`apps/web/src/api/cliente.ts`) y lo manda en
+`Authorization: Bearer`. Es simple y suficiente para el proyecto, pero **cualquier script que
+corra en la página puede leerlo**: una vulnerabilidad XSS permitiría robar la sesión hasta que
+el token expire (`JWT_EXPIRES_IN`, 8 h por defecto). React escapa el contenido por defecto y la
+app no usa `dangerouslySetInnerHTML`, lo que reduce el riesgo, pero no lo elimina (dependencias
+de terceros, extensiones).
+
+**Mitigación (no implementada):** emitir el token en una cookie `HttpOnly; Secure; SameSite=Strict`
+(o `Lax`) desde `/api/auth/login`. JavaScript no podría leerla y `SameSite` bloquea su envío en
+peticiones de otros sitios (CSRF); para operaciones que cambian estado conviene además un
+token anti-CSRF. Como web y API comparten origen tras nginx (`/api`), el cambio sería local a
+`AuthModule` y al cliente HTTP.
+
+### La autorización real la aplica la base de datos
+Ocultar menús en React y los `@Roles()` de Nest son **comodidad y defensa en profundidad**, no la
+barrera principal. En cada petición `withContext` hace `SET LOCAL ROLE <rol>` y fija `app.id_usuario`,
+`app.id_hospital` y `app.rol`; a partir de ahí PostgreSQL decide con:
+- `GRANT` mínimos por rol (p. ej. ningún rol tiene `UPDATE` sobre `unidad_sangre`; solo se cambia vía funciones),
+- RLS en `solicitud` por `app.id_hospital`,
+- funciones `SECURITY DEFINER` con validaciones y SQLSTATE propios,
+- bitácora inmodificable por trigger.
+
+Consecuencia: un token robado da exactamente los permisos de BD de ese rol y ese hospital, nada más;
+y un error en la UI o en un guard de Nest no abre datos que la BD no permita (las pruebas de
+`seguridad.spec.ts` lo verifican ejecutando SQL directo con cada rol).
