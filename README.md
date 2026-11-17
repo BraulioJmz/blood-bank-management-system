@@ -44,6 +44,7 @@ npm run dev               # API en :3000 y web en :5173
 | `npm run benchmark` | Benchmark de índices con ≥100k unidades → `docs/evidencias/benchmark.md` |
 | `npm run db:backup -- [base]` / `npm run db:restore -- <dump> [base]` | Respaldo `pg_dump -Fc` / restauración cronometrada |
 | `npm run prueba:restauracion` | Respaldo → falla simulada → restauración → `docs/evidencias/restauracion.md` |
+| `npm run prueba:pitr` | Respaldo base + WAL archivado → lotes con hora conocida → `DROP DATABASE` → recuperación con `recovery_target_time` en un contenedor temporal → sección PITR de `restauracion.md` |
 
 ## Usuarios demo por rol
 

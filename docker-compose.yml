@@ -13,10 +13,31 @@ services:
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
       TZ: America/Mexico_City
       PGTZ: America/Mexico_City
+    # Archivado continuo de WAL (base del PITR, ver scripts/prueba-pitr.sh):
+    # - wal_level=replica: el WAL guarda lo necesario para reconstruir el clúster.
+    # - archive_mode=on + archive_command: al completarse cada segmento de WAL (16 MB),
+    #   PostgreSQL lo copia a /wal_archive. "test ! -f" evita sobrescribir un segmento
+    #   ya archivado (nunca se debe pisar el archivo de WAL).
+    # - archive_timeout=60: fuerza el cambio de segmento cada minuto aunque haya poca
+    #   actividad; acota lo que se puede perder si se pierde el disco del servidor.
+    # El directorio se crea como root y se cede a postgres antes de arrancar.
+    entrypoint: ["sh", "-c", "mkdir -p /wal_archive && chown postgres:postgres /wal_archive && exec docker-entrypoint.sh \"$$@\"", "--"]
+    command:
+      - postgres
+      - -c
+      - wal_level=replica
+      - -c
+      - archive_mode=on
+      - -c
+      - archive_command=test ! -f /wal_archive/%f && cp %p /wal_archive/%f
+      - -c
+      - archive_timeout=60
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - walarchivo:/wal_archive
+      - respaldos:/respaldos
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 3s
@@ -25,3 +46,5 @@ services:
 
 volumes:
   pgdata:
+  walarchivo:   # segmentos de WAL archivados
+  respaldos:    # respaldos base (pg_basebackup) y clústeres recuperados
