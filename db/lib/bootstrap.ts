@@ -56,9 +56,21 @@ export async function bootstrapRoles(client: Client) {
 }
 
 export async function recrearBase(client: Client, database: string) {
-  const db = identificadorSeguro(database);
   // WITH (FORCE) (PG13+) termina las conexiones abiertas antes de borrar.
-  await client.query(`DROP DATABASE IF EXISTS ${db} WITH (FORCE)`);
+  await client.query(`DROP DATABASE IF EXISTS ${identificadorSeguro(database)} WITH (FORCE)`);
+  await crearBase(client, database);
+}
+
+/** Crea la base si no existe. Devuelve true si la creó (para decidir si sembrar). */
+export async function asegurarBase(client: Client, database: string): Promise<boolean> {
+  const { rowCount } = await client.query('SELECT 1 FROM pg_database WHERE datname = $1', [database]);
+  if (rowCount) return false;
+  await crearBase(client, database);
+  return true;
+}
+
+async function crearBase(client: Client, database: string) {
+  const db = identificadorSeguro(database);
   await client.query(
     `CREATE DATABASE ${db} OWNER ${identificadorSeguro(env.ownerUser)} ENCODING 'UTF8' TEMPLATE template0`,
   );

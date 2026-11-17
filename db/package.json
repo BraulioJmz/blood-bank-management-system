@@ -7,7 +7,8 @@
   "scripts": {
     "migrate": "tsx migrate.ts",
     "reset": "tsx reset.ts",
-    "sintetico": "tsx sintetico/generar.ts"
+    "sintetico": "tsx sintetico/generar.ts",
+    "setup": "tsx setup.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^9.9.0",
