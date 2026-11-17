@@ -205,7 +205,7 @@ export function Inventario() {
       <Card>
         <div className="grid gap-3 border-b border-borde p-3 sm:grid-cols-2 sm:px-5 lg:grid-cols-[repeat(3,minmax(0,12rem))_minmax(0,9rem)_1fr]">
           <Select etiqueta="Estado" value={estado} onChange={(e) => filtrar(setEstado)(e.target.value)}>
-            <option value="vigentes">Vigentes (cuarentena y disponibles)</option>
+            <option value="vigentes">Vigentes</option>
             {ESTADOS.map((e) => (
               <option key={e} value={e}>
                 {e[0].toUpperCase() + e.slice(1)}

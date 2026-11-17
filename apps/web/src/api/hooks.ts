@@ -30,6 +30,11 @@ export function useMutacion<V, R = unknown>(opciones: {
       await Promise.all((opciones.invalidar ?? []).map((k) => qc.invalidateQueries({ queryKey: k })));
       opciones.alTerminar?.(r, v);
     },
-    onError: (e) => notificarError(e, opciones.error),
+    onError: (e) => {
+      notificarError(e, opciones.error);
+      // Un rechazo de la BD suele significar que la pantalla estaba desactualizada
+      // (otra sesión cambió la unidad): se recargan las consultas afectadas.
+      (opciones.invalidar ?? []).forEach((k) => void qc.invalidateQueries({ queryKey: k }));
+    },
   });
 }
