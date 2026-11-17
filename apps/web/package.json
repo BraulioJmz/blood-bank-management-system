@@ -27,5 +27,8 @@
     "vite": "^6.3.5",
     "tailwindcss": "^4.1.0",
     "@tailwindcss/vite": "^4.1.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
