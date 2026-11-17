@@ -5,12 +5,14 @@ import { Layout } from './layout/Layout';
 import { MENU } from './layout/navegacion';
 import { Dashboard } from './pages/Dashboard';
 import { Donantes } from './pages/Donantes';
+import { Laboratorio } from './pages/Laboratorio';
 import { Login } from './pages/Login';
 import { Pendiente } from './pages/Pendiente';
 
 const PANTALLAS: Record<string, ReactNode> = {
   '/': <Dashboard />,
   '/donantes': <Donantes />,
+  '/laboratorio': <Laboratorio />,
 };
 
 export default function App() {
