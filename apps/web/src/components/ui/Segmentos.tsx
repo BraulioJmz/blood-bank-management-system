@@ -16,7 +16,7 @@ export function Segmentos<T extends string>({
     <div
       role="radiogroup"
       aria-label={etiqueta}
-      className="inline-flex max-w-full overflow-x-auto rounded-control bg-hundido p-1"
+      className="inline-flex w-fit max-w-full self-start overflow-x-auto rounded-control bg-hundido p-1"
     >
       {opciones.map((o) => (
         <button
