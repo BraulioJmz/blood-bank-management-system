@@ -62,3 +62,86 @@ export interface Dashboard {
     solicitudes_abiertas: number;
   };
 }
+
+export interface Pagina<T> {
+  datos: T[];
+  total: number;
+  pagina: number;
+  tamano: number;
+}
+
+export interface Catalogos {
+  tipos: { id_tipo_sanguineo: number; etiqueta: string }[];
+  componentes: {
+    id_componente: number;
+    nombre: string;
+    vida_util_dias: number;
+    dias_alerta_caducidad: number;
+  }[];
+  hospitales: { id_hospital: number; nombre: string }[];
+  roles: { id_rol: number; nombre: string }[];
+}
+
+export type ResultadoPrueba = 'pendiente' | 'no_reactivo' | 'reactivo';
+export type EstadoUnidad = 'cuarentena' | 'disponible' | 'asignada' | 'entregada' | 'caducada' | 'descartada';
+
+export interface Donante {
+  id_donante: number;
+  nombre: string;
+  fecha_nacimiento: string;
+  sexo: 'M' | 'F';
+  id_tipo_sanguineo: number;
+  tipo: string;
+  edad: number;
+  ultima_donacion?: string | null;
+}
+
+export interface DonanteDetalle extends Donante {
+  donaciones: { id_donacion: number; fecha_donacion: string; tipo_donacion: string; volumen_ml: number }[];
+}
+
+export interface Donacion {
+  id_donacion: number;
+  fecha_donacion: string;
+  tipo_donacion: string;
+  volumen_ml: number;
+  id_donante: number;
+  donante: string;
+  tipo: string;
+  pruebas: Record<string, ResultadoPrueba> | null;
+  pendientes: number;
+  reactivas: number;
+}
+
+export interface DonacionLab {
+  id_donacion: number;
+  fecha_donacion: string;
+  volumen_ml: number;
+  tipo: string;
+  pruebas: { id_prueba: number; tipo: string; resultado: ResultadoPrueba; fecha: string | null }[];
+  pendientes: number;
+  reactivas: number;
+  unidades: { id_unidad: number; id_componente: number; componente: string; estado: EstadoUnidad }[];
+}
+
+export interface UnidadInventario {
+  id_unidad: number;
+  id_donacion: number;
+  estado: EstadoUnidad;
+  tipo: string;
+  componente: string;
+  id_tipo_sanguineo: number;
+  id_componente: number;
+  fecha_obtencion: string;
+  fecha_caducidad: string;
+  dias_restantes: number;
+  semaforo: 'rojo' | 'amarillo' | 'verde' | null;
+}
+
+export interface Movimiento {
+  id_movimiento: number;
+  tipo_movimiento: 'entrada' | 'salida' | 'baja' | 'cambio_estado';
+  fecha_movimiento: string;
+  motivo: string | null;
+  usuario: string;
+}
