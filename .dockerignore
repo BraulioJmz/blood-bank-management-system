@@ -1,0 +1,14 @@
+# Contexto de build: solo lo necesario (más rápido y sin secretos en las imágenes).
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+.git
+.env
+.env.*
+!.env.example
+backups
+entrega
+docs
+.claude
+*.log
+.DS_Store

@@ -9,6 +9,8 @@ la materia (base de datos).
 | Archivo | Qué es |
 |---|---|
 | `package.json` | Monorepo con npm workspaces (`apps/*`, `db`) y los comandos `db:*`, `dev`, `test`, `lint`, `benchmark`, `prueba:*` |
+| `docker-compose.prod.yml` | Despliegue completo con un comando: `db`, `migrador`, `api`, `web` (nginx en :8080) |
+| `.dockerignore` | Deja fuera del contexto de build `node_modules`, `.env`, respaldos y docs |
 | `docker-compose.yml` ★ | PostgreSQL 16 de desarrollo con SCRAM-SHA-256 y **archivado continuo de WAL** (volúmenes `pgdata`, `walarchivo`, `respaldos`) |
 | `.env.example` | Variables necesarias (contraseñas de `postgres`, `banco_owner` y `app_login`, `JWT_SECRET`). El `.env` real no se versiona |
 | `.nvmrc` | Versión de Node (22) |
@@ -21,6 +23,8 @@ la materia (base de datos).
 | Archivo | Qué hace |
 |---|---|
 | `migrate.ts` | Runner propio de migraciones: aplica cada `.sql` en su propia transacción, guarda checksum en `schema_migrations` y rechaza migraciones ya aplicadas que se editaron |
+| `setup.ts` | `db:setup`: inicialización idempotente para despliegues (nunca borra datos) |
+| `Dockerfile` | Imagen del migrador (corre `db:setup` y termina) |
 | `reset.ts` | `db:reset`: crea roles y bases, migra, siembra y carga datos sintéticos en la base de desarrollo |
 | `lib/bootstrap.ts` | Crea los roles globales (`banco_owner`, `app_login`, `rol_*`) y las bases con sus propiedades |
 | `lib/config.ts` | Conexiones como superusuario (bootstrap) o como dueño (migraciones) |
@@ -38,6 +42,7 @@ la materia (base de datos).
 
 | Ruta | Qué hace |
 |---|---|
+| `Dockerfile` | Build multi-stage: deps → build → solo dependencias de producción → runtime como usuario `node` |
 | `src/main.ts` | Arranque: prefijo `/api`, `ValidationPipe` (rechaza propiedades no declaradas), `PgErrorFilter`, CORS |
 | `src/config.ts` | Variables de entorno |
 | `src/db/contexto.ts` ★ | `ejecutarConContexto`: `BEGIN` → `SET LOCAL ROLE` (lista blanca) → `set_config('app.*', …, true)` → callback → `COMMIT`/`ROLLBACK` → `release()` |
@@ -57,6 +62,7 @@ la materia (base de datos).
 
 | Ruta | Qué hace |
 |---|---|
+| `Dockerfile` · `nginx.conf` | Build con Vite y nginx: SPA, proxy de `/api`, caché y cabeceras de seguridad |
 | `src/main.tsx` · `App.tsx` | Proveedores (TanStack Query, router, sesión), un único `<Toaster>` y rutas protegidas por rol |
 | `src/api/cliente.ts` | `fetch` a `/api` con JWT; convierte errores en `ErrorApi` con `codigo` (SQLSTATE) |
 | `src/api/hooks.ts` | `useCatalogos`, `useMutacion` (toast de éxito/error y recarga de consultas afectadas) |
