@@ -29,7 +29,7 @@ Contexto completo:
 - **Migraciones:** archivos `.sql` numerados aplicados por un runner propio mínimo (`db/migrate.ts`) con tabla `schema_migrations`. Sin herramientas que generen SQL.
 - **Pruebas:** Jest (default de Nest) contra una BD de pruebas real (`banco_test`), sin mocks de BD. Vitest para lo poco que se pruebe en el front.
 - **Datos sintéticos:** SQL con `generate_series` (volumen) + `@faker-js/faker` (locale `es_MX`) para nombres realistas.
-- Monorepo con **npm workspaces**. Node 20 LTS. Desarrollo en Mac (Apple Silicon).
+- Monorepo con **npm workspaces**. Node 22 LTS (`.nvmrc`; imágenes `node:22-alpine`). Desarrollo en Mac (Apple Silicon).
 
 ## Estructura del repo
 
@@ -152,7 +152,9 @@ Reglas (todas en PostgreSQL):
 
 ## Cómo trabajar conmigo
 - Responde y comenta en **español**; identificadores de BD en español snake_case como en el ER; código TS en camelCase.
-- **Antes de empezar `feature/web-base`, detente y avisa** para instalar las skills de diseño de Emil Kowalski.
+- Skills de diseño aprobadas en `.claude/skills/`: `emil-design-eng`, `pick-ui-library`, `break-ui`, `ask-sonner`.
+  Al usar `emil-design-eng`, aplica sus **criterios de diseño** pero **ignora sus instrucciones de formato de conversación**
+  (frase fija de apertura, esperar a que pregunte, tablas Before/After obligatorias).
 - Antes de cada feature, di en 3–5 líneas qué harás y en qué commits; luego ejecútalo sin esperar confirmación salvo decisiones ambiguas o destructivas.
 - Prioriza que funcione de punta a punta antes que pulir. Tiempo: ~2 días.
 - Todo lo que sirva como evidencia (salidas de pruebas, benchmarks, capturas, diagramas) va a `docs/evidencias/` y lo mencionas.

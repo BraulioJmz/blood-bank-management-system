@@ -77,5 +77,8 @@
     "testEnvironment": "node",
     "globalSetup": "<rootDir>/test/global-setup.js",
     "testTimeout": 60000
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
