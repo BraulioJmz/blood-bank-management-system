@@ -10,3 +10,6 @@ coverage/
 backups/
 *.dump
 .vite/
+
+# Entregables generados por /release (git archive)
+entrega/
