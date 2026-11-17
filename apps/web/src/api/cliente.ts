@@ -38,7 +38,10 @@ export async function api<T>(ruta: string, init: RequestInit & { json?: unknown 
   const { json, headers, ...resto } = init;
   if (import.meta.env.DEV) {
     // break-ui: fixtures de peor caso (?datos=peor|vacio|uno). Vite elimina este bloque en producción.
-    const { fixture } = await import('../dev/fixtures');
+    const [{ fixture }] = await Promise.all([
+      import('../dev/fixtures'),
+      import('../dev/fixturesSolicitudes'),
+    ]);
     const f = fixture(ruta, resto.method);
     if (f !== undefined) return f as T;
   }
