@@ -30,8 +30,7 @@ const boton = cva(
   },
 );
 
-type Props = ButtonHTMLAttributes<HTMLButtonElement> &
-  VariantProps<typeof boton> & { cargando?: boolean };
+type Props = ButtonHTMLAttributes<HTMLButtonElement> & VariantProps<typeof boton> & { cargando?: boolean };
 
 export function Button({ variante, tamano, cargando, className, children, disabled, ...props }: Props) {
   return (

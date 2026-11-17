@@ -1,17 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { createContext, use, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api, onNoAutorizado, token } from '../api/cliente';
 import type { RespuestaLogin, Usuario } from '../api/tipos';
-
-interface Sesion {
-  usuario: Usuario | null;
-  /** true mientras se valida el token guardado contra /auth/yo al recargar. */
-  validando: boolean;
-  entrar: (username: string, password: string) => Promise<Usuario>;
-  salir: () => void;
-}
-
-const Ctx = createContext<Sesion | null>(null);
+import { Ctx, type Sesion } from './contexto';
 
 /**
  * El JWT se guarda en localStorage (simple para el proyecto; en producción real se preferiría
@@ -46,12 +37,9 @@ export function SesionProvider({ children }: { children: ReactNode }) {
     return r.usuario;
   }, []);
 
-  const valor = useMemo(() => ({ usuario, validando, entrar, salir }), [usuario, validando, entrar, salir]);
+  const valor: Sesion = useMemo(
+    () => ({ usuario, validando, entrar, salir }),
+    [usuario, validando, entrar, salir],
+  );
   return <Ctx value={valor}>{children}</Ctx>;
-}
-
-export function useSesion() {
-  const s = use(Ctx);
-  if (!s) throw new Error('useSesion fuera de SesionProvider');
-  return s;
 }

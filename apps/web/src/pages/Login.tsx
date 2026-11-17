@@ -3,7 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { useSesion } from '../auth/sesion';
+import { useSesion } from '../auth/contexto';
 
 export function Login() {
   const { usuario, entrar } = useSesion();
@@ -41,9 +41,27 @@ export function Login() {
             <p className="text-sm text-tenue">Inicia sesión con tu usuario institucional</p>
           </div>
         </div>
-        <form onSubmit={enviar} className="flex flex-col gap-4 rounded-tarjeta bg-superficie p-5 shadow-tarjeta sm:p-6" noValidate>
-          <Input etiqueta="Usuario" name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} required autoFocus />
-          <Input etiqueta="Contraseña" name="password" type="password" autoComplete="current-password" required />
+        <form
+          onSubmit={enviar}
+          className="flex flex-col gap-4 rounded-tarjeta bg-superficie p-5 shadow-tarjeta sm:p-6"
+          noValidate
+        >
+          <Input
+            etiqueta="Usuario"
+            name="username"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            required
+            autoFocus
+          />
+          <Input
+            etiqueta="Contraseña"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+          />
           {error && (
             <p className="rounded-control bg-peligro-suave px-3 py-2 text-sm text-peligro" role="alert">
               {error}

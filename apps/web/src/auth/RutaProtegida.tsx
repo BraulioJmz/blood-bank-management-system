@@ -1,7 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router';
 import type { Rol } from '../api/tipos';
 import { Cargando } from '../components/ui/Estado';
-import { useSesion } from './sesion';
+import { useSesion } from './contexto';
 
 /** Sin sesión → /login (recordando a dónde iba). Con `roles`, un rol ajeno → panel. */
 export function RutaProtegida({ roles }: { roles?: Rol[] }) {

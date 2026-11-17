@@ -12,7 +12,10 @@ export function Cargando({ texto = 'Cargando…' }: { texto?: string }) {
 
 export function ErrorCarga({ error, children }: { error: unknown; children?: ReactNode }) {
   return (
-    <div className="flex items-start gap-2 rounded-control bg-peligro-suave p-3 text-sm text-peligro" role="alert">
+    <div
+      className="flex items-start gap-2 rounded-control bg-peligro-suave p-3 text-sm text-peligro"
+      role="alert"
+    >
       <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
       <div>
         <p>{error instanceof Error ? error.message : 'No se pudo cargar la información.'}</p>

@@ -2,7 +2,7 @@ import { Dialog } from '@base-ui/react/dialog';
 import { Droplet, LogOut, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router';
-import { useSesion } from '../auth/sesion';
+import { useSesion } from '../auth/contexto';
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/cn';
 import { NOMBRE_ROL, menuDe } from './navegacion';
