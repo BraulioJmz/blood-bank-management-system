@@ -28,6 +28,19 @@ export const fechaHora = (iso: string) =>
     timeZone: ZONA,
   });
 
+/** '16 nov, 08:43 p.m.' para columnas angostas; agrega el año solo si no es el actual. */
+export const fechaCortaHora = (iso: string) => {
+  const d = new Date(iso);
+  return d.toLocaleString('es-MX', {
+    day: 'numeric',
+    month: 'short',
+    ...(d.getFullYear() !== new Date().getFullYear() && { year: 'numeric' }),
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: ZONA,
+  });
+};
+
 export const numero = (n: number | string) => Number(n).toLocaleString('es-MX');
 
 export const dias = (n: number) => (n <= 0 ? 'Hoy' : n === 1 ? '1 día' : `${n} días`);

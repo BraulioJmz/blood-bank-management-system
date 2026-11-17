@@ -24,7 +24,7 @@ import {
   TONO_SEMAFORO,
 } from '../components/ui/tonos';
 import { cn } from '../lib/cn';
-import { dias, fecha, fechaHora, numero } from '../lib/formato';
+import { dias, fecha, fechaCortaHora, fechaHora, numero } from '../lib/formato';
 
 type Filtro = 'abiertas' | 'pendiente' | 'parcial' | 'surtida' | 'cancelada' | 'todas';
 const TAMANO = 25;
@@ -140,7 +140,9 @@ function AsignacionManual({ s }: { s: SolicitudDetalle }) {
     <ul className="max-h-72 divide-y divide-borde overflow-y-auto rounded-control border border-borde">
       {compatibles.data.map((u, i) => (
         <li key={u.id_unidad} className="flex h-12 items-center gap-3 px-3 text-sm">
-          <span className="cifras w-20 font-medium">#{numero(u.id_unidad)}</span>
+          <span className="cifras min-w-20 shrink-0 font-medium whitespace-nowrap">
+            #{numero(u.id_unidad)}
+          </span>
           <span className="cifras min-w-0 flex-1 truncate text-tenue">
             caduca {fecha(u.fecha_caducidad)}
             {i === 0 && <span className="ml-2 text-xs text-info">primera en caducar</span>}
@@ -214,7 +216,7 @@ function DetalleSolicitud({ id, alCerrar }: { id: number | null; alCerrar: () =>
     <Dialogo
       abierto={id !== null}
       alCambiar={(a) => !a && cerrar()}
-      titulo={`Solicitud #${id ?? ''}`}
+      titulo={`Solicitud #${id !== null ? numero(id) : ''}`}
       descripcion={s && `${s.hospital} · ${fechaHora(s.fecha_solicitud)}`}
       ancho="lg"
       pie={
@@ -275,7 +277,7 @@ function DetalleSolicitud({ id, alCerrar }: { id: number | null; alCerrar: () =>
         <Cargando />
       ) : (
         <div className="flex flex-col gap-5">
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-4">
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-[auto_minmax(0,1fr)_auto_auto]">
             <div>
               <dt className="text-xs text-tenue">Tipo</dt>
               <dd className="cifras text-lg font-semibold">{s.tipo}</dd>
@@ -324,7 +326,9 @@ function DetalleSolicitud({ id, alCerrar }: { id: number | null; alCerrar: () =>
                     key={a.id_asignacion}
                     className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm"
                   >
-                    <span className="cifras w-20 font-medium">#{numero(a.id_unidad)}</span>
+                    <span className="cifras min-w-20 shrink-0 font-medium whitespace-nowrap">
+                      #{numero(a.id_unidad)}
+                    </span>
                     <Badge tono={TONO_ESTADO_UNIDAD[a.estado_unidad]}>{a.estado_unidad}</Badge>
                     <span className="cifras text-tenue">caduca {fecha(a.fecha_caducidad)}</span>
                     <span className="ml-auto truncate text-xs text-tenue" title={a.autorizo}>
@@ -406,61 +410,103 @@ export function Solicitudes() {
           <Vacio>No hay solicitudes en este estado.</Vacio>
         ) : (
           <div className={cn(consulta.isPlaceholderData && 'opacity-60 transition-opacity')}>
-            <Tabla minimo="56rem">
-              <thead>
-                <tr>
-                  <Th numerico>#</Th>
-                  {!esHospital && <Th>Hospital</Th>}
-                  <Th>Tipo</Th>
-                  <Th>Componente</Th>
-                  <Th>Avance</Th>
-                  <Th>Prioridad</Th>
-                  <Th>Estado</Th>
-                  <Th>Fecha</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {consulta.data.datos.map((s) => (
-                  <Fila
-                    key={s.id_solicitud}
+            {/* Móvil: lista con lo urgente arriba (prioridad, estado, avance); la tabla oculta columnas tras scroll. */}
+            <ul className="divide-y divide-borde md:hidden">
+              {consulta.data.datos.map((s) => (
+                <li key={s.id_solicitud}>
+                  <button
+                    type="button"
                     onClick={() => setAbierto(s.id_solicitud)}
-                    className="cursor-pointer [@media(hover:hover)]:hover:bg-hundido"
+                    className="flex w-full flex-col gap-1.5 px-4 py-3 text-left active:bg-hundido"
                   >
-                    <Td numerico>
-                      <button
-                        type="button"
-                        className="font-medium hover:underline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setAbierto(s.id_solicitud);
-                        }}
-                      >
-                        {numero(s.id_solicitud)}
-                      </button>
-                    </Td>
-                    {!esHospital && (
-                      <Td className="max-w-60 truncate" title={s.hospital}>
-                        {s.hospital}
-                      </Td>
-                    )}
-                    <Td className="cifras font-semibold">{s.tipo}</Td>
-                    <Td className="max-w-56 truncate" title={s.componente}>
-                      {s.componente}
-                    </Td>
-                    <Td>
-                      <Progreso asignadas={s.asignadas} cantidad={s.cantidad} />
-                    </Td>
-                    <Td>
+                    <span className="flex items-center gap-2">
+                      <span className="cifras font-semibold">#{numero(s.id_solicitud)}</span>
                       <Badge tono={TONO_PRIORIDAD[s.prioridad]}>{s.prioridad}</Badge>
-                    </Td>
-                    <Td>
-                      <Badge tono={TONO_ESTADO_SOLICITUD[s.estado]}>{s.estado}</Badge>
-                    </Td>
-                    <Td className="cifras whitespace-nowrap text-tenue">{fechaHora(s.fecha_solicitud)}</Td>
-                  </Fila>
-                ))}
-              </tbody>
-            </Tabla>
+                      <span className="ml-auto">
+                        <Badge tono={TONO_ESTADO_SOLICITUD[s.estado]}>{s.estado}</Badge>
+                      </span>
+                    </span>
+                    {!esHospital && (
+                      <span className="truncate text-sm" title={s.hospital}>
+                        {s.hospital}
+                      </span>
+                    )}
+                    <span className="flex min-w-0 items-center gap-2 text-sm text-tenue">
+                      <span className="cifras font-semibold text-texto">{s.tipo}</span>
+                      <span className="truncate">{s.componente}</span>
+                    </span>
+                    <span className="flex items-center gap-3">
+                      <span className="flex-1">
+                        <Progreso asignadas={s.asignadas} cantidad={s.cantidad} />
+                      </span>
+                      <span className="cifras text-xs text-tenue">{fechaCortaHora(s.fecha_solicitud)}</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden md:block">
+              <Tabla minimo="56rem">
+                <thead>
+                  <tr>
+                    <Th numerico>#</Th>
+                    {!esHospital && <Th>Hospital</Th>}
+                    <Th>Tipo</Th>
+                    <Th>Componente</Th>
+                    <Th>Avance</Th>
+                    <Th>Prioridad</Th>
+                    <Th>Estado</Th>
+                    <Th>Fecha</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {consulta.data.datos.map((s) => (
+                    <Fila
+                      key={s.id_solicitud}
+                      onClick={() => setAbierto(s.id_solicitud)}
+                      className="cursor-pointer [@media(hover:hover)]:hover:bg-hundido"
+                    >
+                      <Td numerico>
+                        <button
+                          type="button"
+                          className="font-medium hover:underline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAbierto(s.id_solicitud);
+                          }}
+                        >
+                          {numero(s.id_solicitud)}
+                        </button>
+                      </Td>
+                      {!esHospital && (
+                        <Td className="max-w-60 truncate" title={s.hospital}>
+                          {s.hospital}
+                        </Td>
+                      )}
+                      <Td className="cifras font-semibold">{s.tipo}</Td>
+                      <Td className="max-w-56 truncate" title={s.componente}>
+                        {s.componente}
+                      </Td>
+                      <Td>
+                        <Progreso asignadas={s.asignadas} cantidad={s.cantidad} />
+                      </Td>
+                      <Td>
+                        <Badge tono={TONO_PRIORIDAD[s.prioridad]}>{s.prioridad}</Badge>
+                      </Td>
+                      <Td>
+                        <Badge tono={TONO_ESTADO_SOLICITUD[s.estado]}>{s.estado}</Badge>
+                      </Td>
+                      <Td
+                        className="cifras whitespace-nowrap text-tenue"
+                        title={fechaHora(s.fecha_solicitud)}
+                      >
+                        {fechaCortaHora(s.fecha_solicitud)}
+                      </Td>
+                    </Fila>
+                  ))}
+                </tbody>
+              </Tabla>
+            </div>
             <Paginacion pagina={pagina} tamano={TAMANO} total={consulta.data.total} alCambiar={setPagina} />
           </div>
         )}
