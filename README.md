@@ -11,11 +11,14 @@ datos; NestJS y React son capas delgadas.
 
 | Herramienta | Versión usada |
 |---|---|
-| Node.js | 22 LTS (`.nvmrc`; `nvm use`) |
-| npm | 10.8 |
-| Docker Desktop / Compose | 29.8 / v5.6 |
-| PostgreSQL (contenedor) | 16 (alpine) |
-| SO de desarrollo | macOS 26.6 (Apple Silicon) |
+| Node.js / npm | 22.23 LTS (`.nvmrc`; `nvm use`) / 10.9 |
+| Docker Desktop / Compose | 29.8 / v5 |
+| PostgreSQL (contenedor) | 16.16 (`postgres:16-alpine`) |
+| NestJS / `pg` | 11.2 / 8.23 (sin ORM) |
+| React / Vite / TypeScript | 19.3 / 6.4 / 5.9 |
+| SO y equipo de desarrollo | macOS 26.6, Apple M4, 16 GB RAM |
+
+Versiones completas de librerías y arquitectura: `docs/arquitectura.md`. Mapa de archivos: `docs/archivos.md`.
 
 No hace falta `psql` local: los scripts usan `docker exec`.
 
