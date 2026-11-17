@@ -34,3 +34,38 @@ Además se probó con **volumen real**: `npm run db:reset -- --db banco --unidad
 
 Capturas: `capturas/break-ui-inventario-peor-caso.jpg`, `capturas/break-ui-inventario-movil.jpg`,
 `capturas/break-ui-inventario-historial.jpg`.
+
+## Solicitudes (`/solicitudes`)
+
+Volumen real con 100k unidades: 48,472 solicitudes. La API responde en ≤ 60 ms (abiertas: 6 ms;
+página 100 de surtidas: 61 ms) y las unidades compatibles en 6 ms (índice parcial de disponibles).
+
+### Superficie y límites
+
+| Valor | Fuente | Límite | Peor caso usado |
+|---|---|---|---|
+| Solicitud # | `solicitud.id_solicitud` integer | 2,147,483,647 | 2147483647 |
+| Hospital | `hospital.nombre` varchar(150) | 150 | nombre real de ≈118 caracteres y "IMSS" |
+| Componente | `componente.nombre` varchar(60) | 60 | 59 caracteres |
+| Cantidad / asignadas | `CrearSolicitudDto` 1..50 | 50 | 0/1, 1/2, 49/50, 50/50 |
+| Fecha | `fecha_solicitud` timestamptz | — | hoy y 29 feb 2024 |
+| Asignaciones | lista sin paginar | = cantidad (≤ 50) | 49 |
+| Autorizó | `usuario.nombre` varchar(150) | 150 | 76 caracteres |
+| Compatibles | `LIMIT 50` en la API | 50 | 50, con números de unidad de 10 dígitos |
+
+### Resultados
+
+| # | Qué se rompió | Dónde | Arreglo | Estado |
+|---|---|---|---|---|
+| 1 | El número de unidad de 10 dígitos se **encimaba** con "caduca…" (ancho fijo `w-20`) | detalle: compatibles y asignadas | `min-w-20 shrink-0 whitespace-nowrap` | ✅ corregido |
+| 2 | El título "Solicitud #2147483647" no tenía separador de miles | detalle | `numero()` | ✅ corregido |
+| 3 | A 1440px la columna Fecha se salía de la tarjeta | tabla | fecha corta ("16 nov, 09:00 a.m.") con la completa en `title` | ✅ corregido |
+| 4 | Una fecha de otro año salía sin año ("29 feb") | tabla | se agrega el año cuando no es el actual | ✅ corregido |
+| 5 | El componente se truncaba en el detalle aunque había espacio | detalle | rejilla `auto / minmax(0,1fr) / auto / auto` | ✅ corregido |
+| 6 | En móvil, prioridad, avance y estado quedaban fuera de la vista (scroll horizontal) | tabla | lista para móvil (`md:hidden`) con lo urgente arriba | ✅ corregido |
+| 7 | Hospital de 150 caracteres | tabla | truncado con `title`; completo en el detalle | decisión de diseño |
+| 8 | 49 asignaciones y 50 compatibles | detalle | scroll interno, nada se desborda | ✅ sin falla |
+| 9 | Vacío / uno | lista | "No hay solicitudes en este estado.", "1–1 de 1" | ✅ sin falla |
+
+Capturas antes/después: `capturas/break-ui-solicitud-detalle-{antes,despues}.jpg`,
+`capturas/break-ui-solicitudes-{antes,despues}.jpg`, `capturas/break-ui-solicitudes-movil-{antes,despues}.jpg`.
