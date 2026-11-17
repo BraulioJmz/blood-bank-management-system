@@ -210,7 +210,8 @@ function DetalleSolicitud({ id, alCerrar }: { id: number | null; alCerrar: () =>
   const s = detalle.data;
   const faltan = s ? s.cantidad - s.asignaciones.length : 0;
   const esInventario = usuario?.rol === 'inventario';
-  const puedeCancelar = s && abierta(s.estado) && (usuario?.rol === 'hospital' || esInventario);
+  // fn_cancelar_solicitud solo acepta solicitudes 'pendiente' (sin unidades asignadas; BS010).
+  const puedeCancelar = s && s.estado === 'pendiente' && (usuario?.rol === 'hospital' || esInventario);
 
   return (
     <Dialogo
@@ -233,11 +234,7 @@ function DetalleSolicitud({ id, alCerrar }: { id: number | null; alCerrar: () =>
           </>
         ) : paso === 'cancelar' ? (
           <>
-            <p className="mr-auto self-center text-sm text-tenue">
-              {s.asignaciones.length > 0
-                ? `Las ${s.asignaciones.length} unidades asignadas volverán a disponibles.`
-                : 'No se puede deshacer.'}
-            </p>
+            <p className="mr-auto self-center text-sm text-tenue">No se puede deshacer.</p>
             <Button onClick={() => setPaso('ver')}>Volver</Button>
             <Button
               variante="peligro"
