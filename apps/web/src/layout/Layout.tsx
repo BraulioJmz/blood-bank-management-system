@@ -52,14 +52,12 @@ function Perfil() {
   if (!usuario) return null;
   return (
     <div className="flex items-center gap-2 border-t border-borde px-3 pt-3">
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium" title={usuario.nombre}>
-          {usuario.nombre}
-        </p>
-        <p className="truncate text-xs text-tenue">
-          {NOMBRE_ROL[usuario.rol]} · {usuario.username}
-        </p>
-      </div>
+      <p
+        className="min-w-0 flex-1 truncate text-sm font-medium"
+        title={`${usuario.nombre} · ${NOMBRE_ROL[usuario.rol]} · ${usuario.username}`}
+      >
+        {usuario.nombre}
+      </p>
       <Button
         variante="fantasma"
         tamano="icono"
@@ -126,7 +124,7 @@ export function Layout() {
       </header>
 
       <main className="min-w-0 px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-[100rem]">
           <Outlet />
         </div>
       </main>

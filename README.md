@@ -25,7 +25,7 @@ No hace falta `psql` local: los scripts usan `docker exec`.
 cp .env.example .env      # y cambia las contraseñas
 npm install
 npm run db:up             # PostgreSQL 16 en Docker
-npm run db:reset          # crea roles y bases, migra y carga seeds
+npm run db:reset          # crea roles y bases, migra, carga seeds y ≈5 000 unidades sintéticas
 npm run dev               # API en :3000 y web en :5173
 ```
 
@@ -35,7 +35,7 @@ npm run dev               # API en :3000 y web en :5173
 |---|---|
 | `npm run db:up` / `db:down` | Levanta / detiene PostgreSQL |
 | `npm run db:migrate` | Aplica migraciones pendientes (`db/migrations/*.sql`) |
-| `npm run db:reset` | Drop + bootstrap + migraciones + seeds |
+| `npm run db:reset` | Drop + bootstrap + migraciones + seeds en `banco` y `banco_test`; además ≈5 000 unidades sintéticas en `banco` (`--sin-sintetico` para omitirlas, `--unidades 100000` para más volumen) |
 | `npm run db:sintetico -- --unidades 100000` | Genera datos sintéticos |
 | `npm run dev` | API + web en paralelo |
 | `npm test` | Pruebas (Jest contra `banco_test`) |

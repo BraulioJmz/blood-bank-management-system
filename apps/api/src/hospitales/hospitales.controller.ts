@@ -41,7 +41,7 @@ export class HospitalesController {
              FROM banco.tipo_sanguineo ORDER BY id_tipo_sanguineo`,
         ),
         c.query<Fila>(
-          'SELECT id_componente, nombre, vida_util_dias FROM banco.componente ORDER BY id_componente',
+          'SELECT id_componente, nombre, vida_util_dias, dias_alerta_caducidad FROM banco.componente ORDER BY id_componente',
         ),
         c.query<Fila>(
           'SELECT id_hospital, nombre FROM banco.hospital ORDER BY nombre',

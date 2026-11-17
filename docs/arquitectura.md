@@ -10,6 +10,7 @@
 | `bitacora_auditoria.usuario_app varchar(20)` | `id_usuario` de la persona que operó (`app.id_usuario`). `usuario_bd` solo dice el rol de BD. |
 | `bitacora_auditoria.rol_app varchar(63)` | Rol de la app (`app.rol`), fijado por `withContext`. Es la fuente explícita de la identidad; `usuario_bd` la corrobora desde el lado de PostgreSQL. |
 | `tipo_sanguineo.grupo_abo varchar(2)` + `CHECK (grupo_abo IN ('A','B','AB','O'))` | El ER lo define como `char`. `AB` tiene dos letras y `char(2)` rellenaría `A` como `'A '` con espacio, lo que complica comparaciones y etiquetas. El CHECK conserva el dominio cerrado de 4 grupos. |
+| `componente.dias_alerta_caducidad integer` + `CHECK (dias_alerta_caducidad BETWEEN 1 AND vida_util_dias)` | No está en el ER. Umbral de "próxima a caducar" propio de cada componente (plaquetas 2, eritrocitos 7, plasma y crioprecipitado 30), porque un umbral fijo no sirve para vidas útiles de 5 a 365 días. Lo usan `v_inventario_unidades` (semáforo), `v_unidades_por_caducar`, `v_disponibilidad` y el dashboard. Migración `007`. |
 
 `bitacora_auditoria.usuario_bd` se llena con `coalesce(nullif(current_setting('role'), 'none'), session_user)` (migración `006`), no con `current_user`: dentro de la función `SECURITY DEFINER` del trigger, `current_user` siempre es el dueño (`banco_owner`), mientras que el GUC `role` conserva el `SET LOCAL ROLE` de la petición. En peticiones de la app `usuario_bd = rol_app`; en migraciones/seeds (sin `SET ROLE`) queda `session_user`.
 
