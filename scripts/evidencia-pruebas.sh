@@ -19,7 +19,7 @@ l.push(`- Fecha: ${new Date().toLocaleString('es-MX', { timeZone: 'America/Mexic
 l.push('- Comando: `npm test` (Jest `--runInBand`) contra PostgreSQL real (`banco_test`), sin mocks de BD');
 l.push(`- Entorno: Node ${process.version}, ${pg}, ${process.platform} ${process.arch}`);
 l.push(`- Resultado: **${r.numPassedTests}/${r.numTotalTests} pruebas pasan** en ${r.numTotalTestSuites} suites ${codigo === '0' ? '✅' : '❌'}`);
-l.push('', 'Detalle numérico: `resultados-concurrencia.md`, `resultados-reglas.md`, `resultados-seguridad.md`.', '');
+l.push('', 'Detalle numérico: `resultados-concurrencia.md`, `resultados-reglas.md`, `resultados-seguridad.md`, `resultados-e2e.md`.', '');
 for (const s of r.testResults.sort((a, b) => a.name.localeCompare(b.name))) {
   const nombre = s.name.split('/apps/api/')[1];
   l.push(`## ${nombre}`, '', '| Prueba | Resultado | ms |', '|---|---|---|');
