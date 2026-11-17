@@ -24,7 +24,8 @@
     "benchmark": "tsx scripts/benchmark-indices.ts",
     "db:backup": "bash scripts/backup.sh",
     "db:restore": "bash scripts/restore.sh",
-    "prueba:restauracion": "bash scripts/prueba-restauracion.sh"
+    "prueba:restauracion": "bash scripts/prueba-restauracion.sh",
+    "prueba:pitr": "bash scripts/prueba-pitr.sh"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
