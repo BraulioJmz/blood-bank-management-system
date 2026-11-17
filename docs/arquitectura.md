@@ -316,9 +316,38 @@ Procedimiento, línea de tiempo con LSN, timeline nuevo y explicación de WAL/LS
 
 ## Despliegue
 
-Desarrollo: `docker compose up -d db` (PostgreSQL con archivado de WAL) + `npm run dev` (Nest en :3000,
-Vite en :5173 con proxy de `/api`). El despliegue completo con contenedores se documenta en la
-sección siguiente cuando se agrega `docker-compose.prod.yml` (`feature/infra-docker`).
+Todo el sistema se levanta con **un comando** (`docker-compose.prod.yml`, proyecto `banco-sangre-prod`):
+
+```bash
+cp .env.example .env    # definir contraseñas y JWT_SECRET (no tienen valor por defecto)
+docker compose -f docker-compose.prod.yml up --build -d     # → http://localhost:8080
+```
+
+```mermaid
+flowchart LR
+  U["Navegador"] -- "HTTP :8080" --> N
+  subgraph Docker["Red interna de Docker (banco-sangre-prod)"]
+    N["web<br/>nginx 1.27<br/>SPA estática + proxy /api"] -- "/api → api:3000" --> A["api<br/>node:22-alpine<br/>NestJS (usuario node)"]
+    A -- "app_login · 5432" --> D[("db<br/>postgres:16-alpine<br/>archivado de WAL")]
+    M["migrador<br/>db:setup idempotente<br/>(corre y termina)"] -- "postgres / banco_owner" --> D
+  end
+  D --- V1[("volumen pgdata")]
+  D --- V2[("volumen walarchivo")]
+```
+
+| Servicio | Imagen | Qué hace | Expuesto |
+|---|---|---|---|
+| `db` | `postgres:16-alpine` | PostgreSQL con SCRAM-SHA-256 y archivado continuo de WAL | No (solo red interna) |
+| `migrador` | `db/Dockerfile` | `db:setup`: roles, base si falta, migraciones pendientes, seeds si no hay usuarios, datos sintéticos la primera vez (`SINTETICO_UNIDADES`). Nunca borra datos | No; termina con código 0 |
+| `api` | `apps/api/Dockerfile` (multi-stage: deps → build → prod-deps → runtime) | NestJS como usuario `node`, solo dependencias de producción, healthcheck en `/api/salud` | No (solo vía nginx) |
+| `web` | `apps/web/Dockerfile` (build con Vite → `nginx:1.27-alpine`) | Sirve la SPA, `try_files` para rutas de React Router, proxy de `/api`, gzip, caché inmutable de `/assets`, cabeceras de seguridad (CSP, `X-Frame-Options`, `nosniff`) | `:8080` |
+
+Orden de arranque con `depends_on`: `db` *healthy* → `migrador` *completed_successfully* → `api` *healthy*
+→ `web`. Mismo origen para web y API: sin CORS, y PostgreSQL y Nest no quedan expuestos fuera de Docker.
+Verificado: primer arranque en ≈80 s (con build), segundo arranque sin migraciones ni seeds,
+login y dashboard por `:8080` (`docs/evidencias/capturas/despliegue-docker-dashboard.jpg`).
+
+En desarrollo se usa `docker-compose.yml` (solo `db`, con puerto publicado) + `npm run dev`.
 
 ## Limitaciones conocidas
 
