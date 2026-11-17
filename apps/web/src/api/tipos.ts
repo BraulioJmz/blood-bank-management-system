@@ -19,8 +19,19 @@ export interface FilaDisponibilidad {
   id_componente: number;
   componente: string;
   disponibles: number;
-  por_caducar_7d: number;
+  por_caducar: number;
   proxima_caducidad: string | null;
+  dias_alerta_caducidad: number;
+}
+
+export interface UnidadPorCaducar {
+  id_unidad: number;
+  tipo: string;
+  componente: string;
+  fecha_caducidad: string;
+  dias_restantes: number;
+  semaforo: 'rojo' | 'amarillo' | 'verde';
+  dias_alerta_caducidad: number;
 }
 
 export interface SolicitudPendiente {
@@ -44,7 +55,9 @@ export interface Dashboard {
   alertas: {
     existencias_bajas: FilaDisponibilidad[];
     umbral_bajo: number;
-    por_caducar_7d: number;
+    por_caducar: number;
+    /** null si el rol no puede ver unidades (hospital, recepción). */
+    proximas_a_caducar: UnidadPorCaducar[] | null;
     solicitudes_urgentes: SolicitudPendiente[];
     solicitudes_abiertas: number;
   };

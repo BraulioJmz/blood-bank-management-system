@@ -3,27 +3,18 @@ import { AlertTriangle, CalendarClock, ClipboardList, Droplet, RefreshCw } from 
 import type { LucideIcon } from 'lucide-react';
 import { Link } from 'react-router';
 import { api } from '../api/cliente';
-import type { Dashboard as DatosDashboard, FilaDisponibilidad } from '../api/tipos';
+import type { Dashboard as DatosDashboard, FilaDisponibilidad, UnidadPorCaducar } from '../api/tipos';
 import { useSesion } from '../auth/contexto';
 import { Badge } from '../components/ui/Badge';
-import { TONO_ESTADO_UNIDAD, TONO_PRIORIDAD, type Tono } from '../components/ui/tonos';
 import { Button } from '../components/ui/Button';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Cargando, ErrorCarga, Vacio } from '../components/ui/Estado';
+import { TONO_ESTADO_UNIDAD, TONO_PRIORIDAD, TONO_SEMAFORO, type Tono } from '../components/ui/tonos';
 import { cn } from '../lib/cn';
+import { dias, fechaCorta, hora, numero } from '../lib/formato';
 
 const TIPOS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const ESTADOS = ['cuarentena', 'disponible', 'asignada', 'entregada', 'caducada', 'descartada'];
-
-const hora = (iso: string) =>
-  new Date(iso).toLocaleTimeString('es-MX', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'America/Mexico_City',
-  });
-
-const fecha = (d: string) =>
-  new Date(`${d}T12:00:00`).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
 
 function Kpi({
   etiqueta,
@@ -52,13 +43,13 @@ function Kpi({
           aria-hidden
         />
       </div>
-      <p className="cifras text-2xl font-semibold tracking-tight">{valor.toLocaleString('es-MX')}</p>
+      <p className="cifras text-2xl font-semibold tracking-tight">{numero(valor)}</p>
       {detalle && <p className="text-xs text-tenue">{detalle}</p>}
     </Card>
   );
 }
 
-/** Matriz componente × tipo sanguíneo; la celda se colorea por nivel de existencias. */
+/** Matriz componente × tipo: rojo solo en 0, ámbar por debajo del umbral, neutro lo demás. */
 function MatrizDisponibilidad({ filas, umbral }: { filas: FilaDisponibilidad[]; umbral: number }) {
   const componentes = [...new Map(filas.map((f) => [f.id_componente, f.componente])).entries()];
   const celda = (idc: number, tipo: string) => filas.find((f) => f.id_componente === idc && f.tipo === tipo);
@@ -66,10 +57,10 @@ function MatrizDisponibilidad({ filas, umbral }: { filas: FilaDisponibilidad[]; 
     <div className="overflow-x-auto">
       <table className="w-full min-w-[40rem] text-sm">
         <thead>
-          <tr className="text-left text-xs text-tenue">
-            <th className="px-4 py-2 font-medium sm:px-5">Componente</th>
+          <tr className="text-xs text-tenue">
+            <th className="px-4 py-2 text-left font-medium sm:px-5">Componente</th>
             {TIPOS.map((t) => (
-              <th key={t} className="px-2 py-2 text-center font-medium">
+              <th key={t} className="px-1.5 py-2 text-center font-medium">
                 {t}
               </th>
             ))}
@@ -82,28 +73,17 @@ function MatrizDisponibilidad({ filas, umbral }: { filas: FilaDisponibilidad[]; 
                 {nombre}
               </th>
               {TIPOS.map((t) => {
-                const f = celda(idc, t);
-                const n = Number(f?.disponibles ?? 0);
-                const porCaducar = Number(f?.por_caducar_7d ?? 0);
+                const n = Number(celda(idc, t)?.disponibles ?? 0);
                 return (
                   <td key={t} className="px-1.5 py-1.5 text-center">
                     <span
-                      title={
-                        porCaducar
-                          ? `${n} disponibles · ${porCaducar} caducan en ≤ 7 días`
-                          : `${n} disponibles`
-                      }
                       className={cn(
-                        'cifras inline-flex h-8 min-w-11 items-center justify-center gap-1 rounded-control px-2',
-                        n === 0
-                          ? 'bg-peligro-suave font-medium text-peligro'
-                          : n < umbral
-                            ? 'bg-aviso-suave font-medium text-aviso'
-                            : 'text-texto',
+                        'cifras inline-flex h-8 min-w-11 items-center justify-center rounded-control px-2',
+                        n === 0 && 'bg-peligro-suave font-medium text-peligro',
+                        n > 0 && n < umbral && 'bg-aviso-suave font-medium text-aviso',
                       )}
                     >
-                      {n}
-                      {porCaducar > 0 && <span className="size-1.5 rounded-full bg-aviso" aria-hidden />}
+                      {numero(n)}
                     </span>
                   </td>
                 );
@@ -113,20 +93,54 @@ function MatrizDisponibilidad({ filas, umbral }: { filas: FilaDisponibilidad[]; 
         </tbody>
       </table>
       <p className="flex flex-wrap gap-x-4 gap-y-1 border-t border-borde px-4 py-2.5 text-xs text-tenue sm:px-5">
-        <span>
-          <span className="mr-1 inline-block size-2 rounded-sm bg-peligro-suave ring-1 ring-peligro/30" /> Sin
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-2 rounded-sm bg-peligro-suave ring-1 ring-peligro/30" aria-hidden /> Sin
           existencias
         </span>
-        <span>
-          <span className="mr-1 inline-block size-2 rounded-sm bg-aviso-suave ring-1 ring-aviso/30" /> Menos
-          de {umbral}
-        </span>
-        <span>
-          <span className="mr-1 inline-block size-1.5 rounded-full bg-aviso" /> Con unidades que caducan en ≤
-          7 días
+        <span className="inline-flex items-center gap-1.5">
+          <span className="size-2 rounded-sm bg-aviso-suave ring-1 ring-aviso/30" aria-hidden /> Menos de{' '}
+          {umbral}
         </span>
       </p>
     </div>
+  );
+}
+
+/** Unidades disponibles que caducan primero, cada una con el umbral de su componente. */
+function ProximasACaducar({ unidades }: { unidades: UnidadPorCaducar[] }) {
+  return (
+    <Card>
+      <CardHeader
+        titulo="Próximas a caducar"
+        descripcion="Según el umbral de cada componente · se asignan primero (FEFO)"
+        accion={
+          <Link to="/inventario" className="text-sm whitespace-nowrap text-info hover:underline">
+            Inventario
+          </Link>
+        }
+      />
+      {unidades.length === 0 ? (
+        <Vacio>Ninguna unidad disponible está dentro de su umbral de caducidad.</Vacio>
+      ) : (
+        <ul className="divide-y divide-borde">
+          {unidades.map((u) => (
+            <li key={u.id_unidad} className="flex items-center gap-3 px-4 py-2.5 text-sm sm:px-5">
+              <span className="cifras w-9 shrink-0 font-semibold">{u.tipo}</span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate" title={u.componente}>
+                  {u.componente}
+                </p>
+                <p className="cifras truncate text-xs text-tenue">
+                  #{u.id_unidad} · caduca {fechaCorta(u.fecha_caducidad)} · alerta a {u.dias_alerta_caducidad}{' '}
+                  d
+                </p>
+              </div>
+              <Badge tono={TONO_SEMAFORO[u.semaforo]}>{dias(Number(u.dias_restantes))}</Badge>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }
 
@@ -143,9 +157,10 @@ export function Dashboard() {
 
   const d = consulta.data;
   const totalDisponibles = d.disponibilidad.reduce((s, f) => s + Number(f.disponibles), 0);
-  const veSolicitudes = usuario && ['hospital', 'inventario', 'admin'].includes(usuario.rol);
+  const veSolicitudes = !!usuario && ['hospital', 'inventario', 'admin'].includes(usuario.rol);
   const porEstado = (estado: string) =>
     d.por_estado.filter((f) => f.estado === estado).reduce((s, f) => s + Number(f.total), 0);
+  const columnaLateral = veSolicitudes || d.alertas.proximas_a_caducar !== null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -157,12 +172,7 @@ export function Dashboard() {
             {d.caducadas_ahora > 0 && ` · ${d.caducadas_ahora} unidades se marcaron como caducadas`}
           </p>
         </div>
-        <Button
-          tamano="sm"
-          onClick={() => consulta.refetch()}
-          cargando={consulta.isFetching}
-          aria-label="Actualizar panel"
-        >
+        <Button tamano="sm" onClick={() => consulta.refetch()} cargando={consulta.isFetching}>
           {!consulta.isFetching && <RefreshCw className="size-4" aria-hidden />}
           Actualizar
         </Button>
@@ -171,10 +181,11 @@ export function Dashboard() {
       <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi etiqueta="Unidades disponibles" valor={totalDisponibles} icono={Droplet} tono="ok" />
         <Kpi
-          etiqueta="Caducan en ≤ 7 días"
-          valor={d.alertas.por_caducar_7d}
+          etiqueta="Por caducar"
+          valor={d.alertas.por_caducar}
           icono={CalendarClock}
-          tono={d.alertas.por_caducar_7d > 0 ? 'aviso' : 'neutro'}
+          tono={d.alertas.por_caducar > 0 ? 'aviso' : 'neutro'}
+          detalle="Dentro del umbral de su componente"
         />
         <Kpi
           etiqueta="Existencias bajas"
@@ -196,7 +207,7 @@ export function Dashboard() {
         )}
       </section>
 
-      <div className="grid items-start gap-6 xl:grid-cols-[1fr_22rem]">
+      <div className={cn('grid items-start gap-6', columnaLateral && 'xl:grid-cols-[minmax(0,1fr)_24rem]')}>
         <Card className="min-w-0">
           <CardHeader
             titulo="Disponibilidad por tipo y componente"
@@ -205,71 +216,42 @@ export function Dashboard() {
           <MatrizDisponibilidad filas={d.disponibilidad} umbral={d.alertas.umbral_bajo} />
         </Card>
 
-        <div className="flex min-w-0 flex-col gap-6">
-          {veSolicitudes && (
-            <Card>
-              <CardHeader
-                titulo="Solicitudes urgentes"
-                accion={
-                  <Link to="/solicitudes" className="text-sm text-info hover:underline">
-                    Ver todas
-                  </Link>
-                }
-              />
-              {d.alertas.solicitudes_urgentes.length === 0 ? (
-                <Vacio>Sin solicitudes urgentes pendientes.</Vacio>
-              ) : (
-                <ul className="divide-y divide-borde">
-                  {d.alertas.solicitudes_urgentes.map((s) => (
-                    <li key={s.id_solicitud} className="flex items-center gap-3 px-4 py-3 sm:px-5">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium" title={s.hospital}>
-                          {s.hospital}
-                        </p>
-                        <p className="cifras text-xs text-tenue">
-                          #{s.id_solicitud} · {s.tipo} · {s.componente} · {s.asignadas}/{s.cantidad}
-                        </p>
-                      </div>
-                      <Badge tono={TONO_PRIORIDAD[s.prioridad]}>{s.prioridad}</Badge>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </Card>
-          )}
-
-          <Card>
-            <CardHeader
-              titulo="Existencias bajas"
-              descripcion={`Menos de ${d.alertas.umbral_bajo} unidades`}
-            />
-            {d.alertas.existencias_bajas.length === 0 ? (
-              <Vacio>Todas las combinaciones tienen existencias suficientes.</Vacio>
-            ) : (
-              <ul className="max-h-80 divide-y divide-borde overflow-y-auto">
-                {d.alertas.existencias_bajas.map((f) => (
-                  <li
-                    key={`${f.id_tipo_sanguineo}-${f.id_componente}`}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm sm:px-5"
-                  >
-                    <span className="cifras w-9 font-semibold">{f.tipo}</span>
-                    <span className="min-w-0 flex-1 truncate text-tenue" title={f.componente}>
-                      {f.componente}
-                    </span>
-                    <span
-                      className={cn(
-                        'cifras font-medium',
-                        Number(f.disponibles) === 0 ? 'text-peligro' : 'text-aviso',
-                      )}
-                    >
-                      {f.disponibles}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+        {columnaLateral && (
+          <div className="flex min-w-0 flex-col gap-6">
+            {d.alertas.proximas_a_caducar && <ProximasACaducar unidades={d.alertas.proximas_a_caducar} />}
+            {veSolicitudes && (
+              <Card>
+                <CardHeader
+                  titulo="Solicitudes urgentes"
+                  accion={
+                    <Link to="/solicitudes" className="text-sm whitespace-nowrap text-info hover:underline">
+                      Ver todas
+                    </Link>
+                  }
+                />
+                {d.alertas.solicitudes_urgentes.length === 0 ? (
+                  <Vacio>Sin solicitudes urgentes pendientes.</Vacio>
+                ) : (
+                  <ul className="max-h-96 divide-y divide-borde overflow-y-auto">
+                    {d.alertas.solicitudes_urgentes.map((s) => (
+                      <li key={s.id_solicitud} className="flex items-center gap-3 px-4 py-3 sm:px-5">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium" title={s.hospital}>
+                            {s.hospital}
+                          </p>
+                          <p className="cifras truncate text-xs text-tenue">
+                            #{s.id_solicitud} · {s.tipo} · {s.componente} · {s.asignadas}/{s.cantidad}
+                          </p>
+                        </div>
+                        <Badge tono={TONO_PRIORIDAD[s.prioridad]}>{s.prioridad}</Badge>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
             )}
-          </Card>
-        </div>
+          </div>
+        )}
       </div>
 
       <Card>
@@ -278,12 +260,12 @@ export function Dashboard() {
           descripcion="Todas las unidades registradas, por componente"
         />
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[36rem] text-sm">
+          <table className="cifras w-full min-w-[40rem] text-sm">
             <thead>
-              <tr className="text-left text-xs text-tenue">
-                <th className="px-4 py-2 font-medium sm:px-5">Componente</th>
+              <tr className="text-xs text-tenue">
+                <th className="px-4 py-2 text-left font-medium sm:px-5">Componente</th>
                 {ESTADOS.map((e) => (
-                  <th key={e} className="px-2 py-2 text-right font-medium">
+                  <th key={e} className="px-4 py-2 text-right font-medium last:sm:pr-5">
                     <Badge tono={TONO_ESTADO_UNIDAD[e]}>{e}</Badge>
                   </th>
                 ))}
@@ -296,10 +278,8 @@ export function Dashboard() {
                     {comp}
                   </th>
                   {ESTADOS.map((e) => (
-                    <td key={e} className="cifras px-2 py-2.5 pr-4 text-right">
-                      {Number(
-                        d.por_estado.find((f) => f.componente === comp && f.estado === e)?.total ?? 0,
-                      ).toLocaleString('es-MX')}
+                    <td key={e} className="px-4 py-2.5 text-right last:sm:pr-5">
+                      {numero(d.por_estado.find((f) => f.componente === comp && f.estado === e)?.total ?? 0)}
                     </td>
                   ))}
                 </tr>
@@ -308,34 +288,6 @@ export function Dashboard() {
           </table>
         </div>
       </Card>
-
-      <ProximaCaducidad filas={d.disponibilidad} />
     </div>
-  );
-}
-
-/** Las 5 combinaciones cuya unidad más próxima caduca primero (FEFO a la vista). */
-function ProximaCaducidad({ filas }: { filas: FilaDisponibilidad[] }) {
-  const proximas = filas
-    .filter((f) => f.proxima_caducidad)
-    .sort((a, b) => a.proxima_caducidad!.localeCompare(b.proxima_caducidad!))
-    .slice(0, 5);
-  if (proximas.length === 0) return null;
-  return (
-    <Card>
-      <CardHeader titulo="Próximas a caducar" descripcion="Se asignan primero (FEFO)" />
-      <ul className="divide-y divide-borde">
-        {proximas.map((f) => (
-          <li
-            key={`${f.id_tipo_sanguineo}-${f.id_componente}`}
-            className="flex items-center gap-3 px-4 py-2.5 text-sm sm:px-5"
-          >
-            <span className="cifras w-9 font-semibold">{f.tipo}</span>
-            <span className="min-w-0 flex-1 truncate text-tenue">{f.componente}</span>
-            <span className="cifras">{fecha(f.proxima_caducidad!)}</span>
-          </li>
-        ))}
-      </ul>
-    </Card>
   );
 }
