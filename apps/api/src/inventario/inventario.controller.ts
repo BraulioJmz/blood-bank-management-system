@@ -89,7 +89,8 @@ export class InventarioController {
       await c.query('SELECT banco.fn_marcar_caducadas()');
       const { rows } = await c.query<Fila>(
         `SELECT id_tipo_sanguineo, tipo, id_componente, componente,
-                disponibles::int, por_caducar_7d::int, proxima_caducidad::text
+                disponibles::int, por_caducar::int, proxima_caducidad::text,
+                dias_alerta_caducidad
            FROM banco.v_disponibilidad ORDER BY id_componente, id_tipo_sanguineo`,
       );
       return rows;
@@ -102,7 +103,8 @@ export class InventarioController {
     return this.db.withContext(u, async (c) => {
       await c.query('SELECT banco.fn_marcar_caducadas()');
       const { rows } = await c.query<Fila>(
-        `SELECT id_unidad, estado, tipo, componente, fecha_caducidad::text, dias_restantes, semaforo
+        `SELECT id_unidad, estado, tipo, componente, fecha_caducidad::text, dias_restantes, semaforo,
+                dias_alerta_caducidad
            FROM banco.v_unidades_por_caducar ORDER BY fecha_caducidad, id_unidad LIMIT 200`,
       );
       return rows;

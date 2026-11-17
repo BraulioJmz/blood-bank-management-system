@@ -32,16 +32,33 @@ export class DashboardController {
       );
       const disponibilidad = await c.query<Fila>(
         `SELECT id_tipo_sanguineo, tipo, id_componente, componente,
-                disponibles::int, por_caducar_7d::int, proxima_caducidad::text
+                disponibles::int, por_caducar::int, proxima_caducidad::text,
+                dias_alerta_caducidad
            FROM banco.v_disponibilidad ORDER BY id_componente, id_tipo_sanguineo`,
       );
       const bajas = disponibilidad.rows.filter(
         (r) => Number(r.disponibles) < UMBRAL_BAJO,
       );
       const porCaducar = disponibilidad.rows.reduce(
-        (s, r) => s + Number(r.por_caducar_7d),
+        (s, r) => s + Number(r.por_caducar),
         0,
       );
+
+      // Las unidades disponibles más urgentes, con el umbral de alerta de SU componente
+      // (componente.dias_alerta_caducidad, migración 007). v_unidades_por_caducar es
+      // security_invoker: solo la pueden leer los roles con SELECT sobre unidad_sangre.
+      let proximas: Fila[] | null = null;
+      if (['inventario', 'laboratorio', 'admin'].includes(u.rol)) {
+        const r = await c.query<Fila>(
+          `SELECT id_unidad, tipo, componente, fecha_caducidad::text, dias_restantes,
+                  semaforo, dias_alerta_caducidad
+             FROM banco.v_unidades_por_caducar
+            WHERE estado = 'disponible'
+            ORDER BY fecha_caducidad, id_unidad
+            LIMIT 8`,
+        );
+        proximas = r.rows;
+      }
 
       // Solicitudes urgentes: la vista es security_invoker, así que un hospital solo
       // ve las suyas (RLS). Recepción y laboratorio no tienen acceso a solicitudes.
@@ -66,7 +83,8 @@ export class DashboardController {
         alertas: {
           existencias_bajas: bajas,
           umbral_bajo: UMBRAL_BAJO,
-          por_caducar_7d: porCaducar,
+          por_caducar: porCaducar,
+          proximas_a_caducar: proximas,
           solicitudes_urgentes: urgentes,
           solicitudes_abiertas: abiertas,
         },
