@@ -38,7 +38,7 @@ npm run dev               # API en :3000 y web en :5173
 | `npm run db:reset` | Drop + bootstrap + migraciones + seeds en `banco` y `banco_test`; además ≈5 000 unidades sintéticas en `banco` (`--sin-sintetico` para omitirlas, `--unidades 100000` para más volumen) |
 | `npm run db:sintetico -- --unidades 100000` | Genera datos sintéticos |
 | `npm run dev` | API + web en paralelo |
-| `npm test` | Pruebas (Jest contra `banco_test`) |
+| `npm test` | Pruebas de BD y e2e (Jest + supertest contra `banco_test`, sin mocks) |
 | `npm run lint` | ESLint en api y web |
 | `npm run test:evidencia` | Corre las pruebas y escribe `docs/evidencias/pruebas.md` y `resultados-*.md` |
 | `npm run benchmark` | Benchmark de índices con ≥100k unidades → `docs/evidencias/benchmark.md` |
