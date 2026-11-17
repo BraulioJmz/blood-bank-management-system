@@ -110,7 +110,8 @@ function Cadena({ d, alIr }: { d: Datos; alIr: (id: number) => void }) {
       <Eslabon icono={User} titulo="Donante">
         <Datos
           filas={[
-            ['Nombre', `${d.donante} (#${numero(d.id_donante)})`],
+            ['Nombre', d.donante],
+            ['Donante #', numero(d.id_donante)],
             ['Sexo', d.sexo === 'F' ? 'Femenino' : 'Masculino'],
             ['Nacimiento', fecha(d.fecha_nacimiento)],
           ]}
