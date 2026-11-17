@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { History, PackageCheck, Trash2 } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router';
 import { api } from '../api/cliente';
 import { useCatalogos, useMutacion } from '../api/hooks';
 import type { Movimiento, Pagina, UnidadInventario } from '../api/tipos';
@@ -135,6 +136,13 @@ function Movimientos({ unidad, alCerrar }: { unidad: UnidadInventario | null; al
         unidad && `${unidad.tipo} · ${unidad.componente} · donación #${numero(unidad.id_donacion)}`
       }
       ancho="lg"
+      pie={
+        unidad && (
+          <Link to={`/trazabilidad?unidad=${unidad.id_unidad}`} className="text-sm text-info hover:underline">
+            Ver trazabilidad completa
+          </Link>
+        )
+      }
     >
       {consulta.isError ? (
         <ErrorCarga error={consulta.error} />

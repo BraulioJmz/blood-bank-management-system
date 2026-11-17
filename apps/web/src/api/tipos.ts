@@ -183,3 +183,63 @@ export interface UnidadCompatible {
   dias_restantes: number;
   semaforo: 'rojo' | 'amarillo' | 'verde';
 }
+
+export interface Trazabilidad {
+  id_unidad: number;
+  estado: EstadoUnidad;
+  tipo: string;
+  componente: string;
+  fecha_obtencion: string;
+  fecha_caducidad: string;
+  id_donacion: number;
+  fecha_donacion: string;
+  tipo_donacion: string;
+  volumen_ml: number;
+  capturo: string;
+  id_donante: number;
+  donante: string;
+  sexo: 'M' | 'F';
+  fecha_nacimiento: string;
+  pruebas: { tipo: string; resultado: ResultadoPrueba; fecha: string | null }[] | null;
+  hermanas: { id_unidad: number; componente: string; estado: EstadoUnidad }[] | null;
+  id_asignacion: number | null;
+  fecha_asignacion: string | null;
+  autorizo: string | null;
+  id_solicitud: number | null;
+  prioridad: Prioridad | null;
+  estado_solicitud: EstadoSolicitud | null;
+  id_hospital: number | null;
+  hospital: string | null;
+  movimientos: Omit<Movimiento, 'id_movimiento'>[];
+}
+
+export interface Hospital {
+  id_hospital: number;
+  nombre: string;
+  direccion: string;
+  telefono: string;
+}
+
+export interface UsuarioAdmin {
+  id_usuario: number;
+  username: string;
+  nombre: string;
+  rol: Rol;
+  id_hospital: number | null;
+  hospital: string | null;
+  activo: boolean;
+}
+
+export interface RegistroBitacora {
+  id_bitacora: number;
+  tabla: string;
+  operacion: 'INSERT' | 'UPDATE' | 'DELETE';
+  id_registro: number | null;
+  usuario_bd: string;
+  rol_app: string | null;
+  usuario_app: string | null;
+  nombre_usuario: string | null;
+  fecha: string;
+  valores_anteriores: Record<string, unknown> | null;
+  valores_nuevos: Record<string, unknown> | null;
+}
