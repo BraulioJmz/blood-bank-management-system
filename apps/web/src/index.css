@@ -1,1 +1,78 @@
 @import 'tailwindcss';
+
+/*
+ * Tokens de diseño (ver docs/diseno.md).
+ * Panel clínico: base neutra, rojo sangre solo como acento y para peligro,
+ * colores semánticos para los estados de la unidad. Nada de hex sueltos en componentes:
+ * usar estas utilidades (bg-superficie, text-tenue, border-borde, bg-acento…).
+ */
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Superficies y texto */
+  --color-fondo: oklch(0.985 0.002 250);
+  --color-superficie: oklch(1 0 0);
+  --color-hundido: oklch(0.965 0.003 250);
+  --color-borde: oklch(0.91 0.004 250);
+  --color-borde-fuerte: oklch(0.83 0.006 250);
+  --color-texto: oklch(0.22 0.01 250);
+  --color-tenue: oklch(0.5 0.012 250);
+
+  /* Acento: rojo sangre */
+  --color-acento: oklch(0.5 0.19 25);
+  --color-acento-hover: oklch(0.45 0.18 25);
+  --color-acento-suave: oklch(0.96 0.025 20);
+
+  /* Semánticos (estados de unidad, alertas) */
+  --color-ok: oklch(0.52 0.13 155);
+  --color-ok-suave: oklch(0.96 0.04 155);
+  --color-aviso: oklch(0.6 0.14 70);
+  --color-aviso-suave: oklch(0.97 0.05 85);
+  --color-peligro: oklch(0.53 0.2 27);
+  --color-peligro-suave: oklch(0.96 0.03 25);
+  --color-info: oklch(0.52 0.14 250);
+  --color-info-suave: oklch(0.96 0.025 250);
+
+  --radius-control: 0.5rem;
+  --radius-tarjeta: 0.75rem;
+
+  --shadow-tarjeta: 0 1px 2px oklch(0.2 0.01 250 / 0.05), 0 0 0 1px oklch(0.2 0.01 250 / 0.06);
+  --shadow-flotante: 0 8px 24px oklch(0.2 0.01 250 / 0.12), 0 0 0 1px oklch(0.2 0.01 250 / 0.08);
+
+  /* Movimiento (emil-design-eng): curvas fuertes; nunca ease-in en UI. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-fondo text-texto font-sans;
+  }
+  /* Cifras alineadas en tablas y KPIs. */
+  .cifras {
+    font-variant-numeric: tabular-nums;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-info);
+    outline-offset: 2px;
+  }
+}
+
+/*
+ * Menos movimiento: se quitan desplazamientos y escalas, se conservan
+ * los cambios de opacidad/color que ayudan a entender el estado.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-property: opacity, color, background-color, border-color !important;
+    animation: none !important;
+  }
+}
