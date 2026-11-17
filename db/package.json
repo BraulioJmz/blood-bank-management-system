@@ -1,6 +1,6 @@
 {
   "name": "@banco/db",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Migraciones, seeds y datos sintéticos del banco de sangre",
   "main": "lib/index.ts",
