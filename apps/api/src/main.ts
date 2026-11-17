@@ -1,8 +1,29 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { PgErrorFilter } from './common/pg-error.filter';
+import { config } from './config';
+
+export function configurarApp(app: import('@nestjs/common').INestApplication) {
+  app.setGlobalPrefix('api');
+  // Valida y transforma los DTO; rechaza propiedades no declaradas.
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+  app.useGlobalFilters(new PgErrorFilter());
+  app.enableShutdownHooks();
+  return app;
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT ?? 3000);
+  app.enableCors({ origin: config.corsOrigen });
+  configurarApp(app);
+  await app.listen(config.puerto);
 }
-void bootstrap();
+
+if (require.main === module) void bootstrap();

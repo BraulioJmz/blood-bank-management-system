@@ -1,26 +1,35 @@
 {
   "name": "banco-sangre",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Sistema de administración de banco de sangre (Proyecto integrador ABD, UDG/CUCEI)",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "db"
   ],
   "engines": {
-    "node": ">=20 <21"
+    "node": ">=22"
   },
   "scripts": {
     "db:up": "docker compose up -d --wait db",
     "db:down": "docker compose down",
-    "db:migrate": "npm run migrate -w db",
-    "db:reset": "npm run reset -w db",
-    "db:sintetico": "npm run sintetico -w db --",
+    "db:migrate": "npm run migrate -w @banco/db --",
+    "db:reset": "npm run reset -w @banco/db --",
+    "db:setup": "npm run setup -w @banco/db --",
+    "db:sintetico": "npm run sintetico -w @banco/db --",
     "dev": "concurrently -n api,web -c blue,magenta \"npm run dev -w @banco/api\" \"npm run dev -w @banco/web\"",
     "build": "npm run build -w @banco/api && npm run build -w @banco/web",
     "test": "npm test -w @banco/api",
-    "lint": "npm run lint --workspaces --if-present"
+    "lint": "npm run lint --workspaces --if-present",
+    "test:evidencia": "bash scripts/evidencia-pruebas.sh",
+    "benchmark": "tsx scripts/benchmark-indices.ts",
+    "db:backup": "bash scripts/backup.sh",
+    "db:restore": "bash scripts/restore.sh",
+    "prueba:restauracion": "bash scripts/prueba-restauracion.sh",
+    "prueba:pitr": "bash scripts/prueba-pitr.sh"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "tsx": "^4.19.2"
   }
 }

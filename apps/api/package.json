@@ -1,6 +1,6 @@
 {
   "name": "@banco/api",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "API NestJS del banco de sangre",
   "author": "Equipo ABD",
   "private": true,
@@ -13,7 +13,7 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,test}/**/*.ts\"",
-    "test": "jest",
+    "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
@@ -23,7 +23,13 @@
   "dependencies": {
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/jwt": "^11.0.2",
     "@nestjs/platform-express": "^11.0.1",
+    "argon2": "^0.41.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.4",
+    "dotenv": "^16.6.1",
+    "pg": "^8.23.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
@@ -36,6 +42,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.17.0",
+    "@types/pg": "^8.23.1",
     "@types/supertest": "^7.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
@@ -67,6 +74,11 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "globalSetup": "<rootDir>/test/global-setup.js",
+    "testTimeout": 60000
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
