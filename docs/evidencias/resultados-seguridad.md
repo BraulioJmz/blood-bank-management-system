@@ -1,6 +1,6 @@
 # Resultados de seguridad (generado por seguridad.spec.ts)
 
-Fecha: 2026-11-17T02:03:44.797Z
+Fecha: 2026-11-17T02:55:11.899Z
 
 | Verificación | Esperado | Obtenido |
 |---|---|---|
