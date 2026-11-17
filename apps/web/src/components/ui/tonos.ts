@@ -18,3 +18,10 @@ export const TONO_PRIORIDAD: Record<string, Tono> = {
 
 /** Semáforo de caducidad de v_inventario_unidades (umbral relativo al componente, migración 007). */
 export const TONO_SEMAFORO: Record<string, Tono> = { rojo: 'peligro', amarillo: 'aviso', verde: 'ok' };
+
+export const TONO_ESTADO_SOLICITUD: Record<string, Tono> = {
+  pendiente: 'aviso',
+  parcial: 'info',
+  surtida: 'ok',
+  cancelada: 'neutro',
+};

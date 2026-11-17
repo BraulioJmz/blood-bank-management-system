@@ -60,8 +60,11 @@ export class SolicitudesController {
           WHERE CASE WHEN $1::text IS NULL THEN true
                      WHEN $1 = 'abiertas' THEN s.estado IN ('pendiente', 'parcial')
                      ELSE s.estado = $1 END
+          -- Abiertas primero, por prioridad clínica y la que más lleva esperando;
+          -- las cerradas después, de la más reciente a la más antigua.
           ORDER BY CASE WHEN s.estado IN ('pendiente', 'parcial') THEN 0 ELSE 1 END,
                    CASE s.prioridad WHEN 'emergencia' THEN 1 WHEN 'urgente' THEN 2 ELSE 3 END,
+                   CASE WHEN s.estado IN ('pendiente', 'parcial') THEN s.fecha_solicitud END,
                    s.fecha_solicitud DESC
           LIMIT $2 OFFSET $3`,
         [q.estado ?? null, q.tamano, q.offset],

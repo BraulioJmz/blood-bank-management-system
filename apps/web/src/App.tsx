@@ -9,12 +9,14 @@ import { Inventario } from './pages/Inventario';
 import { Laboratorio } from './pages/Laboratorio';
 import { Login } from './pages/Login';
 import { Pendiente } from './pages/Pendiente';
+import { Solicitudes } from './pages/Solicitudes';
 
 const PANTALLAS: Record<string, ReactNode> = {
   '/': <Dashboard />,
   '/donantes': <Donantes />,
   '/laboratorio': <Laboratorio />,
   '/inventario': <Inventario />,
+  '/solicitudes': <Solicitudes />,
 };
 
 export default function App() {
