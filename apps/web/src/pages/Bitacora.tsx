@@ -41,10 +41,10 @@ function Diferencias({ r }: { r: RegistroBitacora }) {
   const campos = [...new Set([...Object.keys(antes), ...Object.keys(despues)])];
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-xs">
+      <table className="text-xs">
         <thead>
           <tr className="text-left text-tenue">
-            <th className="py-1 pr-4 font-medium">Campo</th>
+            <th className="py-1 pr-8 font-medium">Campo</th>
             {r.valores_anteriores && <th className="py-1 pr-4 font-medium">Antes</th>}
             {r.valores_nuevos && <th className="py-1 font-medium">Después</th>}
           </tr>
@@ -54,7 +54,7 @@ function Diferencias({ r }: { r: RegistroBitacora }) {
             const cambio = r.operacion === 'UPDATE' && texto(antes[c]) !== texto(despues[c]);
             return (
               <tr key={c} className={cn(cambio && 'bg-aviso-suave')}>
-                <td className="py-0.5 pr-4 align-top text-tenue">{c}</td>
+                <td className="py-0.5 pr-8 align-top text-tenue">{c}</td>
                 {r.valores_anteriores && (
                   <td className="max-w-80 py-0.5 pr-4 align-top break-all">{texto(antes[c])}</td>
                 )}

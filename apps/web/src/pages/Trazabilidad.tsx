@@ -43,7 +43,7 @@ function Eslabon({
 
 function Datos({ filas }: { filas: [string, ReactNode][] }) {
   return (
-    <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-sm sm:grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)]">
+    <dl className="grid max-w-3xl grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-sm sm:grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)]">
       {filas.map(([k, v]) => (
         <div key={k} className="contents">
           <dt className="text-tenue">{k}</dt>
