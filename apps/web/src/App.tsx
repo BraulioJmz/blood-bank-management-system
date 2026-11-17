@@ -5,12 +5,14 @@ import { Layout } from './layout/Layout';
 import { MENU } from './layout/navegacion';
 import { Dashboard } from './pages/Dashboard';
 import { Donantes } from './pages/Donantes';
+import { Hospitales } from './pages/Hospitales';
 import { Inventario } from './pages/Inventario';
 import { Laboratorio } from './pages/Laboratorio';
 import { Login } from './pages/Login';
 import { Pendiente } from './pages/Pendiente';
 import { Solicitudes } from './pages/Solicitudes';
 import { Trazabilidad } from './pages/Trazabilidad';
+import { Usuarios } from './pages/Usuarios';
 
 const PANTALLAS: Record<string, ReactNode> = {
   '/': <Dashboard />,
@@ -19,6 +21,8 @@ const PANTALLAS: Record<string, ReactNode> = {
   '/inventario': <Inventario />,
   '/solicitudes': <Solicitudes />,
   '/trazabilidad': <Trazabilidad />,
+  '/hospitales': <Hospitales />,
+  '/usuarios': <Usuarios />,
 };
 
 export default function App() {
