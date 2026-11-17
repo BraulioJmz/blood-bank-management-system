@@ -2,3 +2,4 @@
 .claude/            export-ignore
 skills-lock.json    export-ignore
 PROMPT_INICIAL.md   export-ignore
+CLAUDE.md           export-ignore

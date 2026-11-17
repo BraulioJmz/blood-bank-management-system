@@ -1,6 +1,6 @@
 # Resultados de concurrencia (generado por concurrencia.spec.ts)
 
-Fecha: 2026-11-17T02:55:10.554Z
+Fecha: 2026-11-17T05:04:19.942Z
 
 ## Misma unidad, 20 transacciones simultáneas (sp_asignar_unidad, FOR UPDATE)
 
@@ -11,7 +11,7 @@ Fecha: 2026-11-17T02:55:10.554Z
 | Rechazos | 19 (SQLSTATE: BS001) |
 | Filas en asignacion para la unidad | 1 |
 | Movimientos de salida | 1 |
-| Tiempo total | 28 ms |
+| Tiempo total | 39 ms |
 
 ## Segunda barrera (UK uk_asignacion_unidad)
 
@@ -25,7 +25,7 @@ Dos transacciones leen 'disponible' sin bloquear e insertan la asignación: la s
 | Unidades asignadas | 8 |
 | Unidades distintas | 8 |
 | Errores | 0 |
-| Tiempo total | 8 ms |
+| Tiempo total | 9 ms |
 
 ## Tamizaje concurrente (bloqueo de la donación en fn_evaluar_tamizaje)
 
