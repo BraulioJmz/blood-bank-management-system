@@ -8,10 +8,12 @@
 |---|---|
 | `usuario.password_hash varchar(255)` | Guardar el hash argon2id de la contraseña. El ER no contemplaba autenticación propia. |
 | `bitacora_auditoria.usuario_app varchar(20)` | `id_usuario` de la persona que operó (`app.id_usuario`). `usuario_bd` solo dice el rol de BD. |
-| `bitacora_auditoria.rol_app varchar(63)` | Rol de la app (`app.rol`). Dentro de una función `SECURITY DEFINER`, `current_user` es el dueño (`banco_owner`), así que `usuario_bd` no basta para saber quién operó. |
+| `bitacora_auditoria.rol_app varchar(63)` | Rol de la app (`app.rol`), fijado por `withContext`. Es la fuente explícita de la identidad; `usuario_bd` la corrobora desde el lado de PostgreSQL. |
+| `tipo_sanguineo.grupo_abo varchar(2)` + `CHECK (grupo_abo IN ('A','B','AB','O'))` | El ER lo define como `char`. `AB` tiene dos letras y `char(2)` rellenaría `A` como `'A '` con espacio, lo que complica comparaciones y etiquetas. El CHECK conserva el dominio cerrado de 4 grupos. |
+
+`bitacora_auditoria.usuario_bd` se llena con `coalesce(nullif(current_setting('role'), 'none'), session_user)` (migración `006`), no con `current_user`: dentro de la función `SECURITY DEFINER` del trigger, `current_user` siempre es el dueño (`banco_owner`), mientras que el GUC `role` conserva el `SET LOCAL ROLE` de la petición. En peticiones de la app `usuario_bd = rol_app`; en migraciones/seeds (sin `SET ROLE`) queda `session_user`.
 
 Precisiones de tipo (no cambian el modelo):
-- `tipo_sanguineo.grupo_abo` es `varchar(2)`, porque `AB` tiene dos letras y `char(2)` rellenaría `A ` con un espacio.
 - Las columnas *timestamp* del ER son `timestamptz` (instante absoluto; se muestran en America/Mexico_City).
 - Estados y prioridades son `varchar + CHECK` (no ENUM); el porqué está en `001_esquema.sql`.
 

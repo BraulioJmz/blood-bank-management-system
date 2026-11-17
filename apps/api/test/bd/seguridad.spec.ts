@@ -324,11 +324,13 @@ describe('Seguridad en PostgreSQL', () => {
         // La identidad real sale de withContext (app.rol / app.id_usuario)…
         expect(f.rol_app).toBe('rol_inventario');
         expect(f.usuario_app).toBe(String(u.inventario.idUsuario));
-        // …porque dentro de SECURITY DEFINER current_user es el dueño.
-        expect(f.usuario_bd).toBe('banco_owner');
+        // usuario_bd sale del GUC `role` (el SET LOCAL ROLE de withContext), que
+        // SECURITY DEFINER no altera: debe coincidir con rol_app y NO ser el dueño.
+        expect(f.usuario_bd).toBe(f.rol_app);
+        expect(f.usuario_bd).not.toBe('banco_owner');
       }
       filas.push(
-        `| Bitácora de asignación: rol_app / usuario_app / usuario_bd | rol_inventario / ${u.inventario.idUsuario} / banco_owner | ${asig!.rol_app} / ${asig!.usuario_app} / ${asig!.usuario_bd} |`,
+        `| Bitácora de asignación: rol_app / usuario_app / usuario_bd | rol_inventario / ${u.inventario.idUsuario} / rol_inventario | ${asig!.rol_app} / ${asig!.usuario_app} / ${asig!.usuario_bd} |`,
       );
     });
   });

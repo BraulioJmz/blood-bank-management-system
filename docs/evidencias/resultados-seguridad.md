@@ -1,6 +1,6 @@
 # Resultados de seguridad (generado por seguridad.spec.ts)
 
-Fecha: 2026-11-16T23:13:13.130Z
+Fecha: 2026-11-17T02:03:44.797Z
 
 | Verificación | Esperado | Obtenido |
 |---|---|---|
@@ -29,4 +29,4 @@ Fecha: 2026-11-16T23:13:13.130Z
 | banco_owner: UPDATE | BS013 | BS013 |
 | banco_owner: DELETE | BS013 | BS013 |
 | banco_owner: TRUNCATE | BS013 | BS013 |
-| Bitácora de asignación: rol_app / usuario_app / usuario_bd | rol_inventario / 3 / banco_owner | rol_inventario / 3 / banco_owner |
+| Bitácora de asignación: rol_app / usuario_app / usuario_bd | rol_inventario / 3 / rol_inventario | rol_inventario / 3 / rol_inventario |

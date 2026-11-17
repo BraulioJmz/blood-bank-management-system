@@ -1,6 +1,6 @@
 # Resultados de reglas de negocio (generado por reglas.spec.ts)
 
-Fecha: 2026-11-16T23:13:12.995Z
+Fecha: 2026-11-17T02:03:44.689Z
 
 | Caso | Esperado | Obtenido | ¿Sin cambios? |
 |---|---|---|---|
