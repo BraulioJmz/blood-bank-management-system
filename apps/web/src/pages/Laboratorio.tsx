@@ -18,6 +18,14 @@ import { fechaHora } from '../lib/formato';
 
 type Filtro = 'pendientes' | 'tamizaje' | 'fraccionar' | 'todas';
 const TAMANO = 12;
+/** Etiquetas legibles; en la BD los valores son identificadores sin acento (CHECK de 001). */
+const NOMBRE_PRUEBA: Record<string, string> = { Sifilis: 'Sífilis' };
+const COMPONENTE_CORTO: Record<string, string> = {
+  'Concentrado eritrocitario': 'Eritrocitos',
+  'Plasma fresco congelado': 'Plasma',
+  'Concentrado plaquetario': 'Plaquetas',
+  Crioprecipitado: 'Crio',
+};
 const INVALIDAR = [['laboratorio'], ['donaciones'], ['dashboard'], ['inventario']];
 
 interface PruebaElegida {
@@ -41,8 +49,8 @@ function Prueba({
 }) {
   const r = prueba.resultado;
   return (
-    <li className="flex items-center gap-2 py-1.5">
-      <span className="w-16 text-sm font-medium">{prueba.tipo}</span>
+    <li className="flex h-11 items-center gap-2">
+      <span className="w-16 text-sm font-medium">{NOMBRE_PRUEBA[prueba.tipo] ?? prueba.tipo}</span>
       {r === 'pendiente' ? (
         <div className="ml-auto flex gap-1.5">
           <Button tamano="sm" disabled={ocupado} onClick={() => alCapturar(prueba.id_prueba, 'no_reactivo')}>
@@ -148,8 +156,8 @@ function TarjetaDonacion({
         ) : (
           d.unidades.map((u) => (
             <Badge key={u.id_unidad} tono={TONO_ESTADO_UNIDAD[u.estado]}>
-              <span className="cifras">#{u.id_unidad}</span> {u.componente.split(' ').slice(-1)[0]} ·{' '}
-              {u.estado}
+              <span className="cifras">#{u.id_unidad}</span> {COMPONENTE_CORTO[u.componente] ?? u.componente}{' '}
+              · {u.estado}
             </Badge>
           ))
         )}

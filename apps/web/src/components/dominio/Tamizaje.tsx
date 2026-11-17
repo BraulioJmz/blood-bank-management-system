@@ -27,7 +27,7 @@ export function ResumenTamizaje({ pruebas }: { pruebas: Record<string, Resultado
             )}
           >
             <Icono className="size-3" aria-hidden />
-            {prueba}
+            {prueba === 'Sifilis' ? 'Sífilis' : prueba}
             <span className="sr-only">: {TEXTO[r]}</span>
           </li>
         );
