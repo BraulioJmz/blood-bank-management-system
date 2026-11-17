@@ -1,10 +1,21 @@
+import type { ReactNode } from 'react';
 import { Route, Routes } from 'react-router';
 import { RutaProtegida } from './auth/RutaProtegida';
 import { Layout } from './layout/Layout';
 import { MENU } from './layout/navegacion';
 import { Dashboard } from './pages/Dashboard';
+import { Donantes } from './pages/Donantes';
+import { Inventario } from './pages/Inventario';
+import { Laboratorio } from './pages/Laboratorio';
 import { Login } from './pages/Login';
 import { Pendiente } from './pages/Pendiente';
+
+const PANTALLAS: Record<string, ReactNode> = {
+  '/': <Dashboard />,
+  '/donantes': <Donantes />,
+  '/laboratorio': <Laboratorio />,
+  '/inventario': <Inventario />,
+};
 
 export default function App() {
   return (
@@ -14,10 +25,7 @@ export default function App() {
         <Route element={<Layout />}>
           {MENU.map((e) => (
             <Route key={e.ruta} element={<RutaProtegida roles={e.roles} />}>
-              <Route
-                path={e.ruta}
-                element={e.ruta === '/' ? <Dashboard /> : <Pendiente titulo={e.etiqueta} />}
-              />
+              <Route path={e.ruta} element={PANTALLAS[e.ruta] ?? <Pendiente titulo={e.etiqueta} />} />
             </Route>
           ))}
           <Route path="*" element={<Pendiente titulo="Página no encontrada" />} />
