@@ -18,7 +18,7 @@ import { Fila, Tabla, Td, Th } from '../components/ui/Tabla';
 import { TONO_ESTADO_UNIDAD, TONO_SEMAFORO } from '../components/ui/tonos';
 import { claseControl } from '../components/ui/estilos';
 import { cn } from '../lib/cn';
-import { dias, fecha, fechaHora } from '../lib/formato';
+import { dias, fecha, fechaHora, numero } from '../lib/formato';
 
 const TAMANO = 25;
 const ESTADOS = ['cuarentena', 'disponible', 'asignada', 'entregada', 'caducada', 'descartada'] as const;
@@ -130,8 +130,8 @@ function Movimientos({ unidad, alCerrar }: { unidad: UnidadInventario | null; al
     <Dialogo
       abierto={unidad !== null}
       alCambiar={(a) => !a && alCerrar()}
-      titulo={`Historial de la unidad #${unidad?.id_unidad ?? ''}`}
-      descripcion={unidad && `${unidad.tipo} · ${unidad.componente} · donación #${unidad.id_donacion}`}
+      titulo={`Historial de la unidad #${unidad ? numero(unidad.id_unidad) : ''}`}
+      descripcion={unidad && `${unidad.tipo} · ${unidad.componente} · donación #${numero(unidad.id_donacion)}`}
       ancho="lg"
     >
       {consulta.isError ? (
@@ -203,16 +203,18 @@ export function Inventario() {
       />
 
       <Card>
-        <div className="grid gap-3 border-b border-borde p-3 sm:grid-cols-2 sm:px-5 lg:grid-cols-[repeat(3,minmax(0,12rem))_minmax(0,9rem)_1fr]">
-          <Select etiqueta="Estado" value={estado} onChange={(e) => filtrar(setEstado)(e.target.value)}>
-            <option value="vigentes">Vigentes</option>
-            {ESTADOS.map((e) => (
-              <option key={e} value={e}>
-                {e[0].toUpperCase() + e.slice(1)}
-              </option>
-            ))}
-            <option value="">Todos</option>
-          </Select>
+        <div className="grid grid-cols-2 gap-3 border-b border-borde p-3 sm:px-5 lg:grid-cols-[repeat(3,minmax(0,12rem))_minmax(0,9rem)_1fr]">
+          <div className="col-span-2 lg:col-span-1">
+            <Select etiqueta="Estado" value={estado} onChange={(e) => filtrar(setEstado)(e.target.value)}>
+              <option value="vigentes">Vigentes</option>
+              {ESTADOS.map((e) => (
+                <option key={e} value={e}>
+                  {e[0].toUpperCase() + e.slice(1)}
+                </option>
+              ))}
+              <option value="">Todos</option>
+            </Select>
+          </div>
           <Select etiqueta="Tipo" value={tipo} onChange={(e) => filtrar(setTipo)(e.target.value)}>
             <option value="">Todos</option>
             {catalogos.data?.tipos.map((t) => (
@@ -246,7 +248,7 @@ export function Inventario() {
               className={cn(claseControl, 'cifras h-10')}
             />
           </div>
-          <div className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-1">
+          <div className="col-span-2 flex flex-col gap-1.5 lg:col-span-1">
             <span className="text-sm font-medium">Semáforo</span>
             <Segmentos
               etiqueta="Semáforo"
@@ -289,7 +291,7 @@ export function Inventario() {
                 {consulta.data.datos.map((u) => (
                   <Fila key={u.id_unidad}>
                     <Td numerico className="font-medium">
-                      {u.id_unidad}
+                      {numero(u.id_unidad)}
                     </Td>
                     <Td className="cifras font-semibold">{u.tipo}</Td>
                     <Td className="max-w-56 truncate" title={u.componente}>
@@ -315,7 +317,7 @@ export function Inventario() {
                       )}
                     </Td>
                     <Td numerico className="text-tenue">
-                      {u.id_donacion}
+                      {numero(u.id_donacion)}
                     </Td>
                     {(esInventario || veHistorial) && (
                       <Td>
