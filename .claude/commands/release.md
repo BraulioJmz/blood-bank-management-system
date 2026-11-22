@@ -22,5 +22,5 @@ Prepara la release `$ARGUMENTS`:
      && git checkout develop && git merge --no-ff release/$ARGUMENTS -m "merge: release/$ARGUMENTS en develop" \
      && git branch -d release/$ARGUMENTS
    ```
-6. Genera el entregable desde el tag: `mkdir -p entrega && git archive --format=zip -o entrega/banco-sangre-v$ARGUMENTS.zip v$ARGUMENTS && unzip -l entrega/banco-sangre-v$ARGUMENTS.zip`. Respeta los `export-ignore` de `.gitattributes`; verifica con `unzip -l` que no trae `.claude/` ni `PROMPT_INICIAL.md` (ni `CLAUDE.md` si así se decidió). `entrega/` está en `.gitignore`.
+6. Genera el entregable desde el tag: `mkdir -p entrega && git archive --format=zip -o entrega/banco-sangre-v$ARGUMENTS.zip v$ARGUMENTS && unzip -l entrega/banco-sangre-v$ARGUMENTS.zip`. Respeta los `export-ignore` de `.gitattributes`; verifica con `unzip -l` que no trae `.claude/` (ni `CLAUDE.md` si así se decidió). `entrega/` está en `.gitignore`.
 7. Muestra `git log --oneline --graph --all -25`. No hagas push salvo que te lo pida.
