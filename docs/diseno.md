@@ -1,6 +1,6 @@
 # Guía de diseño de la web
 
-Criterios tomados de las skills `emil-design-eng` y `pick-ui-library` (`.claude/skills/`).
+Criterios de diseño: `emil-design-eng` y `pick-ui-library`.
 Los tokens viven en `apps/web/src/index.css` (`@theme` de Tailwind v4).
 
 ## Carácter

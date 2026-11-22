@@ -21,19 +21,19 @@ triggers, procedimientos, constraints, roles, RLS y bitácora. NestJS y React so
 
 ---
 
-## ✨ Lo más destacado
+## Lo más destacado
 
 | | |
 |---|---|
-| 🛡️ **Falla segura** | Toda unidad nace en `cuarentena`. Un trigger la libera solo cuando las 5 pruebas de tamizaje (VIH, VHB, VHC, sífilis, Chagas) salen no reactivas; si una sale reactiva, descarta todas las unidades de esa donación. |
-| 🔒 **Concurrencia real** | `sp_asignar_unidad` bloquea la fila con `SELECT … FOR UPDATE`, y una UK en `asignacion` sirve de segunda barrera. Con 20 transacciones simultáneas sobre la misma unidad, **1 tiene éxito y 19 se rechazan**. |
-| ⏳ **FEFO sin esperas** | La asignación automática toma primero las unidades que caducan antes, con `FOR UPDATE SKIP LOCKED`, así que las solicitudes simultáneas no se bloquean entre sí. |
-| 👥 **Privilegios mínimos + RLS** | 5 roles `NOLOGIN` con GRANT por tabla y columna. Cada hospital solo ve sus solicitudes (Row-Level Security), y ningún rol puede hacer `UPDATE` directo sobre las unidades. |
-| 📜 **Auditoría inmutable** | Un trigger genérico registra cada INSERT/UPDATE/DELETE con el rol y el usuario reales de la app, incluso dentro de funciones `SECURITY DEFINER`. Nadie puede modificar ni borrar la bitácora. |
-| ⚡ **Rendimiento medido** | Con 100 000 unidades, un índice parcial reduce la consulta de disponibilidad un **98.7 %** y la selección FEFO un **99.6 %**. |
-| 💾 **Recuperación a un punto en el tiempo** | Archivado de WAL + `pg_basebackup` + `recovery_target_time`: se recupera en menos de 1 s perdiendo 5 donaciones, contra 35 con `pg_dump`. |
+| **Falla segura** | Toda unidad nace en `cuarentena`. Un trigger la libera solo cuando las 5 pruebas de tamizaje (VIH, VHB, VHC, sífilis, Chagas) salen no reactivas; si una sale reactiva, descarta todas las unidades de esa donación. |
+| **Concurrencia real** | `sp_asignar_unidad` bloquea la fila con `SELECT … FOR UPDATE`, y una UK en `asignacion` sirve de segunda barrera. Con 20 transacciones simultáneas sobre la misma unidad, **1 tiene éxito y 19 se rechazan**. |
+| **FEFO sin esperas** | La asignación automática toma primero las unidades que caducan antes, con `FOR UPDATE SKIP LOCKED`, así que las solicitudes simultáneas no se bloquean entre sí. |
+| **Privilegios mínimos + RLS** | 5 roles `NOLOGIN` con GRANT por tabla y columna. Cada hospital solo ve sus solicitudes (Row-Level Security), y ningún rol puede hacer `UPDATE` directo sobre las unidades. |
+| **Auditoría inmutable** | Un trigger genérico registra cada INSERT/UPDATE/DELETE con el rol y el usuario reales de la app, incluso dentro de funciones `SECURITY DEFINER`. Nadie puede modificar ni borrar la bitácora. |
+| **Rendimiento medido** | Con 100 000 unidades, un índice parcial reduce la consulta de disponibilidad un **98.7 %** y la selección FEFO un **99.6 %**. |
+| **Recuperación a un punto en el tiempo** | Archivado de WAL + `pg_basebackup` + `recovery_target_time`: se recupera en menos de 1 s perdiendo 5 donaciones, contra 35 con `pg_dump`. |
 
-## 🖼️ Capturas
+## Capturas
 
 <table>
   <tr>
@@ -57,7 +57,7 @@ triggers, procedimientos, constraints, roles, RLS y bitácora. NestJS y React so
 Las 34 capturas (vistas por rol, versión móvil y pruebas con datos de peor caso) están en
 [`docs/evidencias/capturas/`](docs/evidencias/capturas/).
 
-## 🏗️ Arquitectura
+## Arquitectura
 
 ```mermaid
 flowchart TB
@@ -85,7 +85,7 @@ stateDiagram-v2
 
 Más detalle (diagramas de secuencia, modelo ER, seguridad y despliegue) en [`docs/arquitectura.md`](docs/arquitectura.md).
 
-## 📊 Resultados medidos
+## Resultados medidos
 
 | Pregunta | Resultado | Evidencia |
 |---|---|---|
@@ -94,7 +94,7 @@ Más detalle (diagramas de secuencia, modelo ER, seguridad y despliegue) en [`do
 | ¿Cuánto tarda recuperar la BD? | `pg_restore` **1.09 s**; PITR **0.92 s** perdiendo solo lo posterior al objetivo | [`restauracion.md`](docs/evidencias/restauracion.md) |
 | ¿Se respetan las reglas y la seguridad? | **65/65 pruebas** contra PostgreSQL real, sin mocks | [`pruebas.md`](docs/evidencias/pruebas.md) |
 
-## 🧰 Stack
+## Stack
 
 | Capa | Tecnología |
 |---|---|
@@ -105,7 +105,7 @@ Más detalle (diagramas de secuencia, modelo ER, seguridad y despliegue) en [`do
 | Datos | `generate_series` para volumen + `@faker-js/faker` (es_MX). Solo datos sintéticos |
 | Infraestructura | Monorepo con npm workspaces, Docker multi-stage, nginx, Docker Compose |
 
-## 🚀 Cómo correrlo
+## Cómo correrlo
 
 Requisitos: **Docker** y, para desarrollo, **Node.js 22** (`nvm use`). No hace falta `psql` local.
 
@@ -167,7 +167,7 @@ Contraseña de todos: **`Demo2026!`** (solo datos sintéticos).
 | `hospital.sur` | hospital | Lo mismo, pero no ve las del Norte |
 | `admin` | admin | Usuarios, hospitales, bitácora de auditoría, consulta global |
 
-## 📁 Estructura
+## Estructura
 
 ```
 db/            migraciones SQL numeradas, runner propio, seeds y generador de datos sintéticos
@@ -179,12 +179,12 @@ docs/          arquitectura, mapa de archivos, guía de diseño y evidencias (pr
 
 Qué hace cada archivo: [`docs/archivos.md`](docs/archivos.md) · Historial de versiones: [`CHANGELOG.md`](CHANGELOG.md)
 
-## 👥 Equipo
+## Equipo
 
 **Braulio Jiménez Chávez** · Emanuel Cavazos Woo · Faed Federico Velasco Mero
 
 Materia: Administración de Bases de Datos (Mtro. Jovan Ricardo Zepeda Gómez), UDG/CUCEI.
 
-## 📄 Licencia
+## Licencia
 
 [MIT](LICENSE)
