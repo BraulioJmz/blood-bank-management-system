@@ -200,5 +200,5 @@ Todos los archivos que entran al entregable (`git archive` de la release, respet
 
 - **`node_modules/`** (dependencias instaladas) y **`dist/`**, `*.tsbuildinfo` (builds): se generan con `npm install` y `npm run build`, no se versionan (`.gitignore`) y no entran al zip. Son código de terceros o salida del compilador, no del proyecto.
 - **`package-lock.json`** sí entra al zip, pero no se explica línea por línea: lo genera npm y fija la versión exacta de cada dependencia para que `npm ci` instale lo mismo en cualquier máquina y en Docker.
-- **Excluidos del entregable** por `.gitattributes`: `.claude/` (comandos y skills del asistente de código), `skills-lock.json`, `PROMPT_INICIAL.md` y `CLAUDE.md` (instrucciones para el asistente). Son herramientas de desarrollo, no parte del sistema.
+- **Excluidos del entregable** por `.gitattributes`: `.claude/` (comandos del asistente de código), `PROMPT_INICIAL.md` y `CLAUDE.md` (instrucciones para el asistente). Son herramientas de desarrollo, no parte del sistema.
 - **No versionados**: `.env` (secretos), `backups/` (respaldos generados), `entrega/` (el zip) y `reporte/` (material del reporte en Word).

@@ -16,3 +16,6 @@ entrega/
 
 # Material del reporte en Word (figuras exportadas, borradores); se arma fuera del repo
 reporte/
+
+# Material local del asistente (no se versiona)
+Claude outputs/
