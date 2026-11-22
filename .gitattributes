@@ -1,4 +1,3 @@
 # Archivos de desarrollo que no van en el entregable generado con `git archive`.
 .claude/            export-ignore
-PROMPT_INICIAL.md   export-ignore
 CLAUDE.md           export-ignore
