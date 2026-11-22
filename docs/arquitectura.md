@@ -17,7 +17,7 @@ Ver también: `docs/archivos.md` (qué hay en cada carpeta), `docs/diseno.md` (g
 ## Vista general
 
 ```mermaid
-flowchart LR
+flowchart TB
   subgraph Navegador
     W["React + Vite<br/>TanStack Query · Base UI · Sonner"]
   end
@@ -324,7 +324,7 @@ docker compose -f docker-compose.prod.yml up --build -d     # → http://localho
 ```
 
 ```mermaid
-flowchart LR
+flowchart TB
   U["Navegador"] -- "HTTP :8080" --> N
   subgraph Docker["Red interna de Docker (banco-sangre-prod)"]
     N["web<br/>nginx 1.27<br/>SPA estática + proxy /api"] -- "/api → api:3000" --> A["api<br/>node:22-alpine<br/>NestJS (usuario node)"]

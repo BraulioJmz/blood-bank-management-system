@@ -2,6 +2,21 @@
 
 Formato: [Conventional Commits](https://www.conventionalcommits.org/es/). Versionado semántico.
 
+## [1.0.1] — 2026-11-22
+
+Versión de archivo tras la entrega: solo documentación, sin cambios en la BD, la API ni la web.
+
+### Documentación
+
+- **docs**: reorganiza el recorrido del guion carpeta por carpeta (`1687b79`)
+- **docs**: orienta de arriba abajo los diagramas de componentes y despliegue (`2fe8f48`)
+- **docs**: agrega CHANGELOG.md al mapa de archivos (`3447cdb`)
+
+### Mantenimiento
+
+- **infra**: incorpora la licencia MIT del repositorio remoto (`f5a0b50`)
+- **infra**: ignora la carpeta reporte/ (`e63cde9`)
+
 ## [1.0.0] — 2026-11-16
 
 Primera versión entregable del Sistema de administración de banco de sangre (126 commits, del 16 de noviembre de 2026).

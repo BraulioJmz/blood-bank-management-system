@@ -1,6 +1,6 @@
 # Mapa de archivos
 
-Todos los archivos que entran al entregable (`git archive` de la release, respetando `export-ignore`): **191 archivos**, 157 descritos uno por uno y 34 capturas. Lo marcado con ★ es lo central para la materia (base de datos). La arquitectura se explica en `docs/arquitectura.md`; aquí solo se ubica cada pieza.
+Todos los archivos que entran al entregable (`git archive` de la release, respetando `export-ignore`): **192 archivos**, 158 descritos uno por uno y 34 capturas. Lo marcado con ★ es lo central para la materia (base de datos). La arquitectura se explica en `docs/arquitectura.md`; aquí solo se ubica cada pieza.
 
 ## Raíz
 
@@ -11,6 +11,7 @@ Todos los archivos que entran al entregable (`git archive` de la release, respet
 | `.gitattributes` | `export-ignore`: archivos de desarrollo que `git archive` deja fuera del entregable |
 | `.gitignore` | Lo que no se versiona: `node_modules`, builds, `.env`, respaldos, `entrega/` |
 | `.nvmrc` | Versión de Node del proyecto (22) |
+| `CHANGELOG.md` | Cambios de la versión 1.0.0 agrupados por tipo (Conventional Commits) |
 | `README.md` | Requisitos y versiones, cómo levantar (desarrollo y Docker), comandos y usuarios demo por rol |
 | `docker-compose.prod.yml` | Despliegue con un comando: `db` → `migrador` → `api` → `web` (nginx en :8080); secretos sin valores por defecto |
 | `docker-compose.yml` | ★ PostgreSQL 16 de desarrollo: SCRAM-SHA-256 y **archivado continuo de WAL** (volúmenes `pgdata`, `walarchivo`, `respaldos`) |
