@@ -1,6 +1,6 @@
 # break-ui: pruebas de la UI con datos de peor caso
 
-Skill `break-ui` (`.claude/skills/break-ui/`). Los datos de peor caso entran por la misma frontera
+Técnica `break-ui`. Los datos de peor caso entran por la misma frontera
 que los reales: la respuesta de la API. Se activan con `?datos=peor | vacio | uno`, con un interruptor
 que solo existe en desarrollo (`apps/web/src/dev/`), y Vite lo elimina del build de producción.
 Además se probó con **volumen real**: `npm run db:reset -- --db banco --unidades 100000`.

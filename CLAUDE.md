@@ -153,7 +153,7 @@ Reglas (todas en PostgreSQL):
 
 ## Cómo trabajar conmigo
 - Responde y comenta en **español**; identificadores de BD en español snake_case como en el ER; código TS en camelCase.
-- Skills de diseño aprobadas en `.claude/skills/`: `emil-design-eng`, `pick-ui-library`, `break-ui`, `ask-sonner`.
+- Skills de diseño usadas durante el desarrollo (instaladas fuera del repo): `emil-design-eng`, `pick-ui-library`, `break-ui`, `ask-sonner`.
   Al usar `emil-design-eng`, aplica sus **criterios de diseño** pero **ignora sus instrucciones de formato de conversación**
   (frase fija de apertura, esperar a que pregunte, tablas Before/After obligatorias).
 - Antes de cada feature, di en 3–5 líneas qué harás y en qué commits; luego ejecútalo sin esperar confirmación salvo decisiones ambiguas o destructivas.
